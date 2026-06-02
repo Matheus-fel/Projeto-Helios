@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  apache:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apache_server
+    ports:
+      - "8050:80"
+    volumes:
+      - ./www:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - mysql
+    networks:
+      - app_net
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_server
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      # Material usado para fins didaticos, ao usar em modo produção é recomendado adicionar as configurações de segurança em um arquivo .env
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: projeto
+      MYSQL_USER: aluno
+      MYSQL_PASSWORD: "123456"
+    ports:
+      - "3356:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - app_net
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin_server
+    restart: unless-stopped
+    ports:
+      - "8051:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    depends_on:
+      - mysql
+    networks:
+      - app_net
+
+volumes:
+  mysql_data:
+  vendor_data:
+  composer_cache:
+
+networks:
+  app_net:
+
