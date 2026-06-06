@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Helios – Plataforma Solar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080a0f;
+  --surface: #0e1118;
+  --surface2: #141720;
+  --border: #1e2230;
+  --border2: #262a3a;
+  --gold: #f5a623;
+  --gold2: #fbbf24;
+  --gold-dim: #f5a62322;
+  --text: #eef0f6;
+  --muted: #6b7280;
+  --muted2: #9ca3af;
+  --blue: #3b82f6;
+  --success: #10b981;
+  --error: #ef4444;
+  --r: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── BACKGROUND GLOW ─── */
+.bg-glow {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.bg-glow::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, #f5a62315 0%, transparent 70%);
+  top: -200px; left: 50%; transform: translateX(-50%);
+  border-radius: 50%;
+}
+.bg-glow::after {
+  content: '';
+  position: absolute;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, #3b82f610 0%, transparent 70%);
+  bottom: 0; right: -100px;
+  border-radius: 50%;
+}
+
+/* ─── SCREENS ─── */
+.screen {
+  position: fixed; inset: 0; z-index: 1;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+.screen.active { display: flex; }
+
+/* ─── AUTH CARD ─── */
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%; max-width: 420px;
+  position: relative;
+  animation: fadeUp .35s ease;
+}
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.logo-mark {
+  display: flex; align-items: center; gap: .6rem;
+  margin-bottom: 1.75rem; justify-content: center;
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  background: var(--gold-dim);
+  border: 1px solid #f5a62344;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+}
+.logo-text { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--gold); letter-spacing: .5px; }
+.logo-text span { color: var(--text); font-weight: 400; }
+
+.auth-title { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 700; margin-bottom: .3rem; text-align: center; }
+.auth-sub { color: var(--muted2); font-size: .85rem; text-align: center; margin-bottom: 1.75rem; }
+
+.form-group { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
+.form-group label { font-size: .78rem; color: var(--muted2); letter-spacing: .3px; }
+.form-group input, .form-group select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text);
+  padding: .65rem .9rem;
+  font-size: .88rem;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+}
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px #f5a62318;
+}
+.form-group select option { background: var(--surface2); }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+.btn-main {
+  width: 100%; padding: .75rem;
+  background: var(--gold);
+  color: #000;
+  border: none; border-radius: var(--r);
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem;
+  cursor: pointer; transition: opacity .15s, transform .1s;
+  margin-top: .5rem;
+  letter-spacing: .3px;
+}
+.btn-main:hover { opacity: .9; }
+.btn-main:active { transform: scale(.98); }
+
+.auth-link {
+  text-align: center; margin-top: 1.25rem;
+  font-size: .82rem; color: var(--muted);
+}
+.auth-link a { color: var(--gold); cursor: pointer; text-decoration: none; }
+.auth-link a:hover { text-decoration: underline; }
+
+.error-msg {
+  background: #ef444415; border: 1px solid #ef444430;
+  color: var(--error); border-radius: 8px;
+  padding: .6rem .9rem; font-size: .82rem; margin-bottom: 1rem;
+  display: none;
+}
+
+/* ─── APP LAYOUT ─── */
+#app-screen {
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0;
+  justify-content: flex-start;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: 260px; min-width: 260px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  height: 100vh;
+  flex-shrink: 0;
+}
+.sidebar-header {
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: .6rem;
+}
+.sidebar-header .logo-text { font-size: 1.1rem; }
+
+.nav-section { padding: .75rem .75rem .25rem; }
+.nav-label { font-size: .65rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: .4rem; padding: 0 .5rem; }
+
+.nav-btn {
+  display: flex; align-items: center; gap: .6rem;
+  width: 100%; padding: .55rem .75rem; border-radius: 8px;
+  border: none; background: transparent; color: var(--muted2);
+  cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: .84rem;
+  transition: all .15s; text-align: left;
+}
+.nav-btn:hover { background: var(--surface2); color: var(--text); }
+.nav-btn.active { background: var(--gold-dim); color: var(--gold); border: 1px solid #f5a62322; }
+.nav-btn .nav-icon { font-size: 1rem; width: 18px; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: .7rem;
+}
+.user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), #d97706);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; color: #000; flex-shrink: 0;
+}
+.user-info { flex: 1; overflow: hidden; }
+.user-name { font-size: .82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: .7rem; color: var(--muted); }
+.btn-logout {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 1rem; padding: 4px; transition: color .15s;
+}
+.btn-logout:hover { color: var(--error); }
+
+/* ─── MAIN CONTENT ─── */
+.main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 1rem;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.topbar-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
+.topbar-sub { font-size: .78rem; color: var(--muted); margin-top: 1px; }
+.topbar-badge {
+  background: #10b98122; color: var(--success);
+  border: 1px solid #10b98133; border-radius: 20px;
+  font-size: .7rem; padding: 2px 10px; margin-left: auto;
+}
+
+/* ─── PAGES ─── */
+.page { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.page.active { display: flex; }
+
+/* ─── CHAT ─── */
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.msg-row { display: flex; gap: .75rem; max-width: 780px; }
+.msg-row.user { flex-direction: row-reverse; margin-left: auto; }
+
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .72rem; font-weight: 700;
+}
+.msg-avatar.ia {
+  background: linear-gradient(135deg, #f5a62333, #3b82f633);
+  border: 1px solid #f5a62333;
+  font-size: .85rem;
+}
+.msg-avatar.user-av {
+  background: linear-gradient(135deg, var(--gold), #d97706);
+  color: #000;
+}
+
+.msg-bubble {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 12px; padding: .75rem 1rem;
+  font-size: .87rem; line-height: 1.6; max-width: 580px;
+}
+.msg-row.user .msg-bubble {
+  background: var(--gold-dim); border-color: #f5a62330;
+  color: var(--text);
+}
+.msg-time { font-size: .68rem; color: var(--muted); margin-top: .3rem; }
+.msg-row.user .msg-time { text-align: right; }
+
+.typing-indicator { display: flex; gap: 4px; align-items: center; padding: .4rem 0; }
+.typing-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+  animation: typingPulse 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: .2s; }
+.typing-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes typingPulse {
+  0%, 60%, 100% { opacity: .3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+.chat-input-area {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.chat-input-row {
+  display: flex; gap: .75rem; align-items: flex-end;
+}
+.chat-input-wrap { flex: 1; position: relative; }
+#chatInput {
+  width: 100%;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 10px; color: var(--text);
+  padding: .7rem 1rem; font-size: .87rem;
+  font-family: 'DM Sans', sans-serif;
+  outline: none; resize: none;
+  max-height: 120px; line-height: 1.5;
+  transition: border-color .15s;
+}
+#chatInput:focus { border-color: var(--gold); }
+.btn-send {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--gold); border: none; cursor: pointer;
+  color: #000; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+  transition: opacity .15s; flex-shrink: 0;
+}
+.btn-send:hover { opacity: .85; }
+.chat-hint { font-size: .72rem; color: var(--muted); margin-top: .5rem; text-align: center; }
+
+/* ─── DASHBOARD (placeholder) ─── */
+.dash-content {
+  flex: 1; overflow-y: auto; padding: 1.5rem;
+}
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; padding: 1.25rem;
+}
+.stat-label { font-size: .75rem; color: var(--muted); margin-bottom: .5rem; }
+.stat-val { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; }
+.stat-val.gold { color: var(--gold); }
+.stat-val.green { color: var(--success); }
+.stat-val.blue { color: var(--blue); }
+.stat-delta { font-size: .72rem; color: var(--success); margin-top: .25rem; }
+
+.welcome-banner {
+  background: linear-gradient(135deg, #f5a62310, #3b82f610);
+  border: 1px solid var(--border2); border-radius: 12px;
+  padding: 1.5rem; margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.welcome-banner .sun { font-size: 2rem; }
+.welcome-h { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
+.welcome-p { font-size: .83rem; color: var(--muted2); margin-top: .2rem; }
+.btn-chat-shortcut {
+  margin-left: auto; padding: .55rem 1.1rem;
+  background: var(--gold); color: #000; border: none; border-radius: 8px;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .82rem;
+  cursor: pointer; white-space: nowrap;
+}
+.btn-chat-shortcut:hover { opacity: .9; }
+
+/* ─── SUGGESTIONS ─── */
+.suggestions { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.suggestion-btn {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 20px; padding: .4rem .9rem;
+  font-size: .78rem; color: var(--muted2);
+  cursor: pointer; transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.suggestion-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div class="screen active" id="login-screen">
+  <div class="auth-card">
+    <div class="logo-mark">
+      <div class="logo-icon">☀</div>
+      <div class="logo-text">Helios <span>Energia</span></div>
+    </div>
+    <div class="auth-title">Bem-vindo de volta</div>
+    <div class="auth-sub">Acesse a plataforma com seus dados</div>
+
+    <div class="error-msg" id="login-error">E-mail ou senha incorretos.</div>
+
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" id="login-email" placeholder="seu@email.com">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="login-senha" placeholder="••••••••">
+    </div>
+    <button class="btn-main" onclick="doLogin()">Entrar na plataforma</button>
+
+    <div class="auth-link">
+      Não tem conta? <a onclick="showScreen('register-screen')">Criar conta gratuita</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CADASTRO ══════════════ -->
+<div class="screen" id="register-screen">
+  <div class="auth-card">
+    <div class="logo-mark">
+      <div class="logo-icon">☀</div>
+      <div class="logo-text">Helios <span>Energia</span></div>
+    </div>
+    <div class="auth-title">Criar conta</div>
+    <div class="auth-sub">Preencha os dados para começar</div>
+
+    <div class="error-msg" id="reg-error">Preencha todos os campos obrigatórios.</div>
+
+    <div class="form-group">
+      <label>Nome completo</label>
+      <input type="text" id="reg-nome" placeholder="João Silva">
+    </div>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" id="reg-email" placeholder="joao@empresa.com">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="reg-senha" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label>Confirmar senha</label>
+        <input type="password" id="reg-senha2" placeholder="••••••••">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>ID da Empresa</label>
+        <input type="number" id="reg-empresa" placeholder="1">
+      </div>
+      <div class="form-group">
+        <label>Nível de Acesso</label>
+        <select id="reg-nivel">
+          <option value="">Selecione</option>
+          <option value="operador">Operador</option>
+          <option value="gerente">Gerente</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-main" onclick="doRegister()">Criar conta</button>
+
+    <div class="auth-link">
+      Já tem conta? <a onclick="showScreen('login-screen')">Fazer login</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div class="screen" id="app-screen">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon" style="width:28px;height:28px;font-size:.9rem">☀</div>
+      <div class="logo-text" style="font-size:1rem">Helios <span>App</span></div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Menu</div>
+      <button class="nav-btn active" onclick="navTo('dash', this)">
+        <span class="nav-icon">⚡</span> Dashboard
+      </button>
+      <button class="nav-btn" onclick="navTo('chat', this)">
+        <span class="nav-icon">💬</span> Chat com IA
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-avatar" id="sidebar-avatar">JS</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">João Silva</div>
+        <div class="user-role" id="sidebar-role">Operador</div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()" title="Sair">✕</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub">Visão geral do sistema</div>
+      </div>
+      <span class="topbar-badge" id="db-status-app">verificando…</span>
+    </div>
+
+    <!-- DASH PAGE -->
+    <div class="page active" id="page-dash">
+      <div class="dash-content">
+        <div class="welcome-banner">
+          <div class="sun">☀</div>
+          <div>
+            <div class="welcome-h" id="welcome-title">Olá, João!</div>
+            <div class="welcome-p">O sistema está operando normalmente. Confira as métricas abaixo.</div>
+          </div>
+          <button class="btn-chat-shortcut" onclick="navToChat()">Abrir IA →</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Usinas cadastradas</div>
+            <div class="stat-val gold" id="stat-usinas">—</div>
+            <div class="stat-delta">↑ ativo</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Empresas</div>
+            <div class="stat-val blue" id="stat-empresas">—</div>
+            <div class="stat-delta">conectadas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Usuários</div>
+            <div class="stat-val green" id="stat-usuarios">—</div>
+            <div class="stat-delta">registrados</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT PAGE -->
+    <div class="page" id="page-chat">
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg-row">
+          <div class="msg-avatar ia">☀</div>
+          <div>
+            <div class="msg-bubble">
+              Olá! Sou a <strong>Helios IA</strong>, sua assistente especializada em energia solar e gestão de usinas. Como posso te ajudar hoje?
+            </div>
+            <div class="msg-time">agora</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 0 1.5rem .75rem">
+        <div class="suggestions" id="suggestions">
+          <button class="suggestion-btn" onclick="useSuggestion(this)">Como melhorar eficiência de painéis?</button>
+          <button class="suggestion-btn" onclick="useSuggestion(this)">Normas ABNT para instalações solares</button>
+          <button class="suggestion-btn" onclick="useSuggestion(this)">Calcular capacidade de geração</button>
+          <button class="suggestion-btn" onclick="useSuggestion(this)">Manutenção preventiva de inversores</button>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <div class="chat-input-wrap">
+            <textarea id="chatInput" rows="1" placeholder="Pergunte algo sobre energia solar, usinas, normas técnicas…" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+          </div>
+          <button class="btn-send" onclick="sendChat()">➤</button>
+        </div>
+        <div class="chat-hint">Pressione Enter para enviar · Shift+Enter para nova linha</div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app-screen -->
+
+<script>
+const BASE = window.location.origin;
+let currentUser = null;
+
+// ─── SCREENS ───
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── LOGIN ───
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value.trim();
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+
+  if (!email || !senha) { err.style.display = 'block'; err.textContent = 'Preencha e-mail e senha.'; return; }
+
+  try {
+    const r = await fetch(BASE + '/usuarios/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      currentUser = data.usuario || data;
+      enterApp(currentUser);
+    } else {
+      err.style.display = 'block';
+      err.textContent = data.message || 'Credenciais inválidas.';
+    }
+  } catch(e) {
+    // Modo demo se API não disponível
+    currentUser = { nome: email.split('@')[0], nivel_acesso: 'demo', email };
+    enterApp(currentUser);
+  }
+}
+
+// ─── CADASTRO ───
+async function doRegister() {
+  const nome = document.getElementById('reg-nome').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const senha = document.getElementById('reg-senha').value.trim();
+  const senha2 = document.getElementById('reg-senha2').value.trim();
+  const empresa_id = document.getElementById('reg-empresa').value;
+  const nivel_acesso = document.getElementById('reg-nivel').value;
+  const err = document.getElementById('reg-error');
+  err.style.display = 'none';
+
+  if (!nome || !email || !senha || !nivel_acesso) {
+    err.style.display = 'block'; err.textContent = 'Preencha todos os campos obrigatórios.'; return;
+  }
+  if (senha !== senha2) {
+    err.style.display = 'block'; err.textContent = 'As senhas não coincidem.'; return;
+  }
+
+  try {
+    const body = { nome, email, senha, nivel_acesso };
+    if (empresa_id) body.empresa_id = parseInt(empresa_id);
+    const r = await fetch(BASE + '/usuarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (r.ok) {
+      currentUser = data.usuario || data;
+      enterApp(currentUser);
+    } else {
+      err.style.display = 'block';
+      err.textContent = data.message || 'Erro ao criar conta.';
+    }
+  } catch(e) {
+    currentUser = { nome, email, nivel_acesso };
+    enterApp(currentUser);
+  }
+}
+
+// ─── ENTRAR NO APP ───
+function enterApp(user) {
+  const nome = user.nome || user.email || 'Usuário';
+  const iniciais = nome.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+  const role = user.nivel_acesso || 'usuario';
+
+  document.getElementById('sidebar-avatar').textContent = iniciais;
+  document.getElementById('sidebar-name').textContent = nome;
+  document.getElementById('sidebar-role').textContent = capitalize(role);
+  document.getElementById('welcome-title').textContent = `Olá, ${nome.split(' ')[0]}!`;
+
+  showScreen('app-screen');
+  loadDashStats();
+  checkDbApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  showScreen('login-screen');
+  document.getElementById('chatMessages').innerHTML = `
+    <div class="msg-row">
+      <div class="msg-avatar ia">☀</div>
+      <div>
+        <div class="msg-bubble">Olá! Sou a <strong>Helios IA</strong>, sua assistente especializada em energia solar e gestão de usinas. Como posso te ajudar hoje?</div>
+        <div class="msg-time">agora</div>
+      </div>
+    </div>`;
+  document.getElementById('suggestions').style.display = 'flex';
+}
+
+// ─── NAVEGAÇÃO ───
+function navTo(page, btn) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const titles = { dash: ['Dashboard', 'Visão geral do sistema'], chat: ['Chat com IA', 'Assistente Helios'] };
+  document.getElementById('topbar-title').textContent = titles[page][0];
+  document.getElementById('topbar-sub').textContent = titles[page][1];
+}
+
+function navToChat() {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn')[1].classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-chat').classList.add('active');
+  document.getElementById('topbar-title').textContent = 'Chat com IA';
+  document.getElementById('topbar-sub').textContent = 'Assistente Helios';
+  document.getElementById('chatInput').focus();
+}
+
+// ─── DASHBOARD STATS ───
+async function loadDashStats() {
+  const endpoints = [
+    ['stat-usinas', '/usinas'],
+    ['stat-empresas', '/empresas'],
+    ['stat-usuarios', '/usuarios']
+  ];
+  for (const [id, path] of endpoints) {
+    try {
+      const r = await fetch(BASE + path);
+      const d = await r.json();
+      const count = Array.isArray(d) ? d.length : (d.total || d.count || '—');
+      document.getElementById(id).textContent = count;
+    } catch { document.getElementById(id).textContent = '—'; }
+  }
+}
+
+async function checkDbApp() {
+  const el = document.getElementById('db-status-app');
+  try {
+    const r = await fetch(BASE + '/empresas');
+    if (r.ok) {
+      el.textContent = '✓ Banco conectado';
+      el.style.cssText = 'background:#10b98122;color:#10b981;border:1px solid #10b98133;border-radius:20px;font-size:.7rem;padding:2px 10px;margin-left:auto';
+    } else throw new Error();
+  } catch {
+    el.textContent = '✗ API offline';
+    el.style.cssText = 'background:#ef444415;color:#ef4444;border:1px solid #ef444430;border-radius:20px;font-size:.7rem;padding:2px 10px;margin-left:auto';
+  }
+}
+
+// ─── CHAT ───
+function useSuggestion(btn) {
+  document.getElementById('chatInput').value = btn.textContent;
+  document.getElementById('suggestions').style.display = 'none';
+  sendChat();
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function nowTime() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function appendMsg(role, text) {
+  const msgs = document.getElementById('chatMessages');
+  const isUser = role === 'user';
+  const div = document.createElement('div');
+  div.className = 'msg-row' + (isUser ? ' user' : '');
+  div.innerHTML = `
+    ${isUser ? '' : `<div class="msg-avatar ia">☀</div>`}
+    <div>
+      <div class="msg-bubble">${escHtml(text).replace(/\n/g,'<br>')}</div>
+      <div class="msg-time">${nowTime()}</div>
+    </div>
+    ${isUser ? `<div class="msg-avatar user-av">${getInitials()}</div>` : ''}
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg-row'; div.id = 'typing-msg';
+  div.innerHTML = `
+    <div class="msg-avatar ia">☀</div>
+    <div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-msg');
+  if (t) t.remove();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = ''; input.style.height = 'auto';
+  document.getElementById('suggestions').style.display = 'none';
+  appendMsg('user', text);
+  appendTyping();
+
+  try {
+    // Tenta API de histórico
+    const histResp = await fetch(BASE + '/historico', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        usuario_id: currentUser?.id || 1,
+        pergunta_tecnica: text,
+        resposta_ia: '…gerando…'
+      })
+    }).catch(() => null);
+
+    // Chama API do servidor PHP
+    const resp = await fetch(BASE + '/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pergunta: text })
+    });
+
+    removeTyping();
+
+    if (resp.ok) {
+      const data = await resp.json();
+      const answer = data.resposta || 'Sem resposta.';
+      appendMsg('ia', answer);
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      appendMsg('ia', err.message || 'Desculpe, não consegui processar sua mensagem. Tente novamente.');
+    }
+  } catch(e) {
+    removeTyping();
+    appendMsg('ia', 'Erro de conexão. Verifique sua rede e tente novamente.');
+  }
+}
+
+// ─── UTILS ───
+function getInitials() {
+  const nome = currentUser?.nome || 'U';
+  return nome.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+}
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Enter em login/cadastro
+document.getElementById('login-senha').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('reg-senha2').addEventListener('keydown', e => { if(e.key==='Enter') doRegister(); });
+</script>
+</body>
+</html>
