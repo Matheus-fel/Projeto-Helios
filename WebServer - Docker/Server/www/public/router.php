@@ -4,8 +4,9 @@ require_once __DIR__ . '/controllers/EmpresaController.php';
 require_once __DIR__ . '/controllers/UsuarioController.php';
 require_once __DIR__ . '/controllers/UsinaController.php';
 require_once __DIR__ . '/controllers/HistoricoChatController.php';
+require_once __DIR__ . '/controllers/ChatController.php';
 
-// ── CORS (ajuste a origem conforme necessário) ─────────────────────────────
+// ── CORS ───────────────────────────────────────────────────────────────────
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -20,20 +21,26 @@ function jsonError(string $msg, int $code = 404): void {
 }
 
 // ── Parse da URI ───────────────────────────────────────────────────────────
-$requestUri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$scriptDir     = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
-$path          = '/' . ltrim(substr($requestUri, strlen($scriptDir)), '/');
-$method        = strtoupper($_SERVER['REQUEST_METHOD']);
+$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$scriptDir  = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
+$path       = '/' . ltrim(substr($requestUri, strlen($scriptDir)), '/');
+$method     = strtoupper($_SERVER['REQUEST_METHOD']);
 
-$segments      = array_values(array_filter(explode('/', trim($path, '/'))));
-$resource      = $segments[0] ?? '';
-$id            = isset($segments[1]) && is_numeric($segments[1]) ? (int) $segments[1] : null;
-$sub           = $segments[2] ?? '';           // sub-resource
-$subAction     = $segments[3] ?? '';           // ação dentro da sub-resource
+$segments   = array_values(array_filter(explode('/', trim($path, '/'))));
+$resource   = $segments[0] ?? '';
+$id         = isset($segments[1]) && is_numeric($segments[1]) ? (int) $segments[1] : null;
+$sub        = $segments[2] ?? '';
+$subAction  = $segments[3] ?? '';
 
 // ── Roteamento ─────────────────────────────────────────────────────────────
 try {
     switch ($resource) {
+
+        // ── /chat (IA Helios) ──────────────────────────────────────────────
+        case 'chat':
+            if ($method !== 'POST') jsonError('Método não permitido', 405);
+            (new ChatController())->chat();
+            break;
 
         // ── /empresas ──────────────────────────────────────────────────────
         case 'empresas':
@@ -63,7 +70,7 @@ try {
             $ctrl = new UsuarioController();
             if ($id === null && $sub === '') {
                 if ($method === 'POST' && ($segments[1] ?? '') === 'login') {
-                    $ctrl->login(); // POST /usuarios/login
+                    $ctrl->login();
                 }
                 match ($method) {
                     'GET'  => $ctrl->index(),
@@ -95,9 +102,9 @@ try {
                     default => jsonError('Método não permitido', 405),
                 };
             } elseif ($sub === 'telemetria') {
-                if ($subAction === 'filtro')     $ctrl->telemetriaFiltrada($id);
-                elseif ($subAction === 'media')  $ctrl->mediaHoraria($id);
-                else                             $ctrl->telemetria($id);
+                if ($subAction === 'filtro')    $ctrl->telemetriaFiltrada($id);
+                elseif ($subAction === 'media') $ctrl->mediaHoraria($id);
+                else                            $ctrl->telemetria($id);
             } else {
                 match ($method) {
                     'GET'    => $ctrl->show($id),
