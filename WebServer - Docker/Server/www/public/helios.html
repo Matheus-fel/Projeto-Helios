@@ -32,8 +32,6 @@ body {
   min-height: 100vh;
   overflow: hidden;
 }
-
-/* ─── BACKGROUND GLOW ─── */
 .bg-glow {
   position: fixed; inset: 0; pointer-events: none; z-index: 0;
   overflow: hidden;
@@ -54,8 +52,6 @@ body {
   bottom: 0; right: -100px;
   border-radius: 50%;
 }
-
-/* ─── SCREENS ─── */
 .screen {
   position: fixed; inset: 0; z-index: 1;
   display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -63,8 +59,6 @@ body {
   overflow-y: auto;
 }
 .screen.active { display: flex; }
-
-/* ─── AUTH CARD ─── */
 .auth-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -85,7 +79,6 @@ body {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 .logo-mark {
   display: flex; align-items: center; gap: .6rem;
   margin-bottom: 1.75rem; justify-content: center;
@@ -100,10 +93,8 @@ body {
 }
 .logo-text { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--gold); letter-spacing: .5px; }
 .logo-text span { color: var(--text); font-weight: 400; }
-
 .auth-title { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 700; margin-bottom: .3rem; text-align: center; }
 .auth-sub { color: var(--muted2); font-size: .85rem; text-align: center; margin-bottom: 1.75rem; }
-
 .form-group { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
 .form-group label { font-size: .78rem; color: var(--muted2); letter-spacing: .3px; }
 .form-group input, .form-group select {
@@ -123,9 +114,7 @@ body {
   box-shadow: 0 0 0 3px #f5a62318;
 }
 .form-group select option { background: var(--surface2); }
-
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-
 .btn-main {
   width: 100%; padding: .75rem;
   background: var(--gold);
@@ -138,30 +127,25 @@ body {
 }
 .btn-main:hover { opacity: .9; }
 .btn-main:active { transform: scale(.98); }
-
+.btn-main:disabled { opacity: .5; cursor: not-allowed; }
 .auth-link {
   text-align: center; margin-top: 1.25rem;
   font-size: .82rem; color: var(--muted);
 }
 .auth-link a { color: var(--gold); cursor: pointer; text-decoration: none; }
 .auth-link a:hover { text-decoration: underline; }
-
 .error-msg {
   background: #ef444415; border: 1px solid #ef444430;
   color: var(--error); border-radius: 8px;
   padding: .6rem .9rem; font-size: .82rem; margin-bottom: 1rem;
   display: none;
 }
-
-/* ─── APP LAYOUT ─── */
 #app-screen {
   flex-direction: row;
   align-items: stretch;
   padding: 0;
   justify-content: flex-start;
 }
-
-/* ─── SIDEBAR ─── */
 .sidebar {
   width: 260px; min-width: 260px;
   background: var(--surface);
@@ -176,10 +160,8 @@ body {
   display: flex; align-items: center; gap: .6rem;
 }
 .sidebar-header .logo-text { font-size: 1.1rem; }
-
 .nav-section { padding: .75rem .75rem .25rem; }
 .nav-label { font-size: .65rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: .4rem; padding: 0 .5rem; }
-
 .nav-btn {
   display: flex; align-items: center; gap: .6rem;
   width: 100%; padding: .55rem .75rem; border-radius: 8px;
@@ -190,7 +172,6 @@ body {
 .nav-btn:hover { background: var(--surface2); color: var(--text); }
 .nav-btn.active { background: var(--gold-dim); color: var(--gold); border: 1px solid #f5a62322; }
 .nav-btn .nav-icon { font-size: 1rem; width: 18px; }
-
 .sidebar-footer {
   margin-top: auto;
   padding: 1rem 1.25rem;
@@ -211,11 +192,7 @@ body {
   font-size: 1rem; padding: 4px; transition: color .15s;
 }
 .btn-logout:hover { color: var(--error); }
-
-/* ─── MAIN CONTENT ─── */
 .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-/* ─── TOPBAR ─── */
 .topbar {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border);
@@ -230,12 +207,8 @@ body {
   border: 1px solid #10b98133; border-radius: 20px;
   font-size: .7rem; padding: 2px 10px; margin-left: auto;
 }
-
-/* ─── PAGES ─── */
 .page { display: none; flex: 1; overflow: hidden; flex-direction: column; }
 .page.active { display: flex; }
-
-/* ─── CHAT ─── */
 .chat-messages {
   flex: 1; overflow-y: auto; padding: 1.5rem;
   display: flex; flex-direction: column; gap: 1rem;
@@ -243,10 +216,8 @@ body {
 .chat-messages::-webkit-scrollbar { width: 4px; }
 .chat-messages::-webkit-scrollbar-track { background: transparent; }
 .chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
 .msg-row { display: flex; gap: .75rem; max-width: 780px; }
 .msg-row.user { flex-direction: row-reverse; margin-left: auto; }
-
 .msg-avatar {
   width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -261,7 +232,6 @@ body {
   background: linear-gradient(135deg, var(--gold), #d97706);
   color: #000;
 }
-
 .msg-bubble {
   background: var(--surface2); border: 1px solid var(--border2);
   border-radius: 12px; padding: .75rem 1rem;
@@ -273,7 +243,6 @@ body {
 }
 .msg-time { font-size: .68rem; color: var(--muted); margin-top: .3rem; }
 .msg-row.user .msg-time { text-align: right; }
-
 .typing-indicator { display: flex; gap: 4px; align-items: center; padding: .4rem 0; }
 .typing-dot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
@@ -285,7 +254,6 @@ body {
   0%, 60%, 100% { opacity: .3; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-4px); }
 }
-
 .chat-input-area {
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border);
@@ -315,8 +283,6 @@ body {
 }
 .btn-send:hover { opacity: .85; }
 .chat-hint { font-size: .72rem; color: var(--muted); margin-top: .5rem; text-align: center; }
-
-/* ─── DASHBOARD (placeholder) ─── */
 .dash-content {
   flex: 1; overflow-y: auto; padding: 1.5rem;
 }
@@ -330,7 +296,6 @@ body {
 .stat-val.green { color: var(--success); }
 .stat-val.blue { color: var(--blue); }
 .stat-delta { font-size: .72rem; color: var(--success); margin-top: .25rem; }
-
 .welcome-banner {
   background: linear-gradient(135deg, #f5a62310, #3b82f610);
   border: 1px solid var(--border2); border-radius: 12px;
@@ -347,8 +312,6 @@ body {
   cursor: pointer; white-space: nowrap;
 }
 .btn-chat-shortcut:hover { opacity: .9; }
-
-/* ─── SUGGESTIONS ─── */
 .suggestions { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
 .suggestion-btn {
   background: var(--surface2); border: 1px solid var(--border2);
@@ -358,8 +321,6 @@ body {
   font-family: 'DM Sans', sans-serif;
 }
 .suggestion-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
-
-/* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -369,7 +330,7 @@ body {
 
 <div class="bg-glow"></div>
 
-<!-- ══════════════ LOGIN ══════════════ -->
+<!-- LOGIN -->
 <div class="screen active" id="login-screen">
   <div class="auth-card">
     <div class="logo-mark">
@@ -378,9 +339,7 @@ body {
     </div>
     <div class="auth-title">Bem-vindo de volta</div>
     <div class="auth-sub">Acesse a plataforma com seus dados</div>
-
-    <div class="error-msg" id="login-error">E-mail ou senha incorretos.</div>
-
+    <div class="error-msg" id="login-error"></div>
     <div class="form-group">
       <label>E-mail</label>
       <input type="email" id="login-email" placeholder="seu@email.com">
@@ -389,15 +348,14 @@ body {
       <label>Senha</label>
       <input type="password" id="login-senha" placeholder="••••••••">
     </div>
-    <button class="btn-main" onclick="doLogin()">Entrar na plataforma</button>
-
+    <button class="btn-main" id="btn-login" onclick="doLogin()">Entrar na plataforma</button>
     <div class="auth-link">
       Não tem conta? <a onclick="showScreen('register-screen')">Criar conta gratuita</a>
     </div>
   </div>
 </div>
 
-<!-- ══════════════ CADASTRO ══════════════ -->
+<!-- CADASTRO -->
 <div class="screen" id="register-screen">
   <div class="auth-card">
     <div class="logo-mark">
@@ -406,9 +364,7 @@ body {
     </div>
     <div class="auth-title">Criar conta</div>
     <div class="auth-sub">Preencha os dados para começar</div>
-
-    <div class="error-msg" id="reg-error">Preencha todos os campos obrigatórios.</div>
-
+    <div class="error-msg" id="reg-error"></div>
     <div class="form-group">
       <label>Nome completo</label>
       <input type="text" id="reg-nome" placeholder="João Silva">
@@ -442,23 +398,20 @@ body {
         </select>
       </div>
     </div>
-    <button class="btn-main" onclick="doRegister()">Criar conta</button>
-
+    <button class="btn-main" id="btn-register" onclick="doRegister()">Criar conta</button>
     <div class="auth-link">
       Já tem conta? <a onclick="showScreen('login-screen')">Fazer login</a>
     </div>
   </div>
 </div>
 
-<!-- ══════════════ APP ══════════════ -->
+<!-- APP -->
 <div class="screen" id="app-screen">
-  <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-header">
       <div class="logo-icon" style="width:28px;height:28px;font-size:.9rem">☀</div>
       <div class="logo-text" style="font-size:1rem">Helios <span>App</span></div>
     </div>
-
     <div class="nav-section">
       <div class="nav-label">Menu</div>
       <button class="nav-btn active" onclick="navTo('dash', this)">
@@ -468,18 +421,16 @@ body {
         <span class="nav-icon">💬</span> Chat com IA
       </button>
     </div>
-
     <div class="sidebar-footer">
       <div class="user-avatar" id="sidebar-avatar">JS</div>
       <div class="user-info">
-        <div class="user-name" id="sidebar-name">João Silva</div>
-        <div class="user-role" id="sidebar-role">Operador</div>
+        <div class="user-name" id="sidebar-name">—</div>
+        <div class="user-role" id="sidebar-role">—</div>
       </div>
       <button class="btn-logout" onclick="doLogout()" title="Sair">✕</button>
     </div>
   </div>
 
-  <!-- Main -->
   <div class="main-content">
     <div class="topbar">
       <div>
@@ -489,18 +440,17 @@ body {
       <span class="topbar-badge" id="db-status-app">verificando…</span>
     </div>
 
-    <!-- DASH PAGE -->
+    <!-- DASH -->
     <div class="page active" id="page-dash">
       <div class="dash-content">
         <div class="welcome-banner">
           <div class="sun">☀</div>
           <div>
-            <div class="welcome-h" id="welcome-title">Olá, João!</div>
+            <div class="welcome-h" id="welcome-title">Olá!</div>
             <div class="welcome-p">O sistema está operando normalmente. Confira as métricas abaixo.</div>
           </div>
           <button class="btn-chat-shortcut" onclick="navToChat()">Abrir IA →</button>
         </div>
-
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">Usinas cadastradas</div>
@@ -521,7 +471,7 @@ body {
       </div>
     </div>
 
-    <!-- CHAT PAGE -->
+    <!-- CHAT -->
     <div class="page" id="page-chat">
       <div class="chat-messages" id="chatMessages">
         <div class="msg-row">
@@ -534,7 +484,6 @@ body {
           </div>
         </div>
       </div>
-
       <div style="padding: 0 1.5rem .75rem">
         <div class="suggestions" id="suggestions">
           <button class="suggestion-btn" onclick="useSuggestion(this)">Como melhorar eficiência de painéis?</button>
@@ -543,7 +492,6 @@ body {
           <button class="suggestion-btn" onclick="useSuggestion(this)">Manutenção preventiva de inversores</button>
         </div>
       </div>
-
       <div class="chat-input-area">
         <div class="chat-input-row">
           <div class="chat-input-wrap">
@@ -554,33 +502,63 @@ body {
         <div class="chat-hint">Pressione Enter para enviar · Shift+Enter para nova linha</div>
       </div>
     </div>
-
-  </div><!-- /main-content -->
-</div><!-- /app-screen -->
+  </div>
+</div>
 
 <script>
-const BASE = window.location.origin;
+// ─── CONFIGURAÇÃO CENTRAL ───────────────────────────────────────────────────
+// Aponta para o Apache rodando no Docker na porta 8050.
+// Se sua API PHP estiver em uma subpasta, ajuste aqui, ex: 'http://localhost:8050/api'
+const BASE = 'http://localhost:8050';
+
+// Opções padrão para todos os fetch — inclui CORS e JSON
+function apiFetch(path, options = {}) {
+  return fetch(BASE + path, {
+    mode: 'cors',
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 let currentUser = null;
 
-// ─── SCREENS ───
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+}
+
+function setLoading(btnId, loading, label) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.textContent = loading ? 'Aguarde…' : label;
+}
+
+function showError(elId, msg) {
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError(elId) {
+  document.getElementById(elId).style.display = 'none';
 }
 
 // ─── LOGIN ───
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value.trim();
-  const err = document.getElementById('login-error');
-  err.style.display = 'none';
+  hideError('login-error');
 
-  if (!email || !senha) { err.style.display = 'block'; err.textContent = 'Preencha e-mail e senha.'; return; }
+  if (!email || !senha) {
+    showError('login-error', 'Preencha e-mail e senha.');
+    return;
+  }
 
+  setLoading('btn-login', true, 'Entrar na plataforma');
   try {
-    const r = await fetch(BASE + '/usuarios/login', {
+    const r = await apiFetch('/usuarios/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, senha })
     });
     const data = await r.json();
@@ -588,40 +566,41 @@ async function doLogin() {
       currentUser = data.usuario || data;
       enterApp(currentUser);
     } else {
-      err.style.display = 'block';
-      err.textContent = data.message || 'Credenciais inválidas.';
+      showError('login-error', data.message || 'E-mail ou senha incorretos.');
     }
-  } catch(e) {
-    // Modo demo se API não disponível
-    currentUser = { nome: email.split('@')[0], nivel_acesso: 'demo', email };
-    enterApp(currentUser);
+  } catch (e) {
+    showError('login-error', 'Não foi possível conectar à API (localhost:8050). Verifique se o Docker está rodando.');
+  } finally {
+    setLoading('btn-login', false, 'Entrar na plataforma');
   }
 }
 
 // ─── CADASTRO ───
 async function doRegister() {
-  const nome = document.getElementById('reg-nome').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const senha = document.getElementById('reg-senha').value.trim();
-  const senha2 = document.getElementById('reg-senha2').value.trim();
+  const nome       = document.getElementById('reg-nome').value.trim();
+  const email      = document.getElementById('reg-email').value.trim();
+  const senha      = document.getElementById('reg-senha').value.trim();
+  const senha2     = document.getElementById('reg-senha2').value.trim();
   const empresa_id = document.getElementById('reg-empresa').value;
   const nivel_acesso = document.getElementById('reg-nivel').value;
-  const err = document.getElementById('reg-error');
-  err.style.display = 'none';
+  hideError('reg-error');
 
   if (!nome || !email || !senha || !nivel_acesso) {
-    err.style.display = 'block'; err.textContent = 'Preencha todos os campos obrigatórios.'; return;
+    showError('reg-error', 'Preencha todos os campos obrigatórios.');
+    return;
   }
   if (senha !== senha2) {
-    err.style.display = 'block'; err.textContent = 'As senhas não coincidem.'; return;
+    showError('reg-error', 'As senhas não coincidem.');
+    return;
   }
 
+  setLoading('btn-register', true, 'Criar conta');
   try {
     const body = { nome, email, senha, nivel_acesso };
     if (empresa_id) body.empresa_id = parseInt(empresa_id);
-    const r = await fetch(BASE + '/usuarios', {
+
+    const r = await apiFetch('/usuarios', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     const data = await r.json();
@@ -629,12 +608,12 @@ async function doRegister() {
       currentUser = data.usuario || data;
       enterApp(currentUser);
     } else {
-      err.style.display = 'block';
-      err.textContent = data.message || 'Erro ao criar conta.';
+      showError('reg-error', data.message || 'Erro ao criar conta. Verifique os dados.');
     }
-  } catch(e) {
-    currentUser = { nome, email, nivel_acesso };
-    enterApp(currentUser);
+  } catch (e) {
+    showError('reg-error', 'Não foi possível conectar à API (localhost:8050). Verifique se o Docker está rodando.');
+  } finally {
+    setLoading('btn-register', false, 'Criar conta');
   }
 }
 
@@ -689,27 +668,29 @@ function navToChat() {
   document.getElementById('chatInput').focus();
 }
 
-// ─── DASHBOARD STATS ───
+// ─── DASHBOARD ───
 async function loadDashStats() {
   const endpoints = [
-    ['stat-usinas', '/usinas'],
+    ['stat-usinas',   '/usinas'],
     ['stat-empresas', '/empresas'],
     ['stat-usuarios', '/usuarios']
   ];
   for (const [id, path] of endpoints) {
     try {
-      const r = await fetch(BASE + path);
+      const r = await apiFetch(path);
       const d = await r.json();
       const count = Array.isArray(d) ? d.length : (d.total || d.count || '—');
       document.getElementById(id).textContent = count;
-    } catch { document.getElementById(id).textContent = '—'; }
+    } catch {
+      document.getElementById(id).textContent = '—';
+    }
   }
 }
 
 async function checkDbApp() {
   const el = document.getElementById('db-status-app');
   try {
-    const r = await fetch(BASE + '/empresas');
+    const r = await apiFetch('/empresas');
     if (r.ok) {
       el.textContent = '✓ Banco conectado';
       el.style.cssText = 'background:#10b98122;color:#10b981;border:1px solid #10b98133;border-radius:20px;font-size:.7rem;padding:2px 10px;margin-left:auto';
@@ -755,7 +736,6 @@ function appendMsg(role, text) {
   `;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
-  return div;
 }
 
 function appendTyping() {
@@ -786,37 +766,21 @@ async function sendChat() {
   appendTyping();
 
   try {
-    // Tenta API de histórico
-    const histResp = await fetch(BASE + '/historico', {
+    const resp = await apiFetch('/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        usuario_id: currentUser?.id || 1,
-        pergunta_tecnica: text,
-        resposta_ia: '…gerando…'
-      })
-    }).catch(() => null);
-
-    // Chama API do servidor PHP
-    const resp = await fetch(BASE + '/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pergunta: text })
     });
-
     removeTyping();
-
     if (resp.ok) {
       const data = await resp.json();
-      const answer = data.resposta || 'Sem resposta.';
-      appendMsg('ia', answer);
+      appendMsg('ia', data.resposta || 'Sem resposta.');
     } else {
       const err = await resp.json().catch(() => ({}));
-      appendMsg('ia', err.message || 'Desculpe, não consegui processar sua mensagem. Tente novamente.');
+      appendMsg('ia', err.message || 'Não consegui processar sua mensagem. Tente novamente.');
     }
   } catch(e) {
     removeTyping();
-    appendMsg('ia', 'Erro de conexão. Verifique sua rede e tente novamente.');
+    appendMsg('ia', 'Erro de conexão com a API (localhost:8050). Verifique se o Docker está rodando.');
   }
 }
 
@@ -830,7 +794,6 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// Enter em login/cadastro
 document.getElementById('login-senha').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 document.getElementById('reg-senha2').addEventListener('keydown', e => { if(e.key==='Enter') doRegister(); });
 </script>
