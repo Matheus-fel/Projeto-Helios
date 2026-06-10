@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -114,6 +113,11 @@ body {
   border-color: var(--gold);
   box-shadow: 0 0 0 3px #f5a62318;
 }
+.form-group input:disabled, .form-group select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #0f121a;
+}
 .form-group select option { background: var(--surface2); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .btn-main {
@@ -129,12 +133,13 @@ body {
 .btn-main:hover { opacity: .9; }
 .btn-main:active { transform: scale(.98); }
 .btn-main:disabled { opacity: .5; cursor: not-allowed; }
-.btn-danger {
-  background: #ef444422;
-  color: var(--error);
-  border: 1px solid #ef444444;
+.btn-secondary {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  margin-top: 0;
 }
-.btn-danger:hover { background: var(--error); color: #000; }
+.btn-secondary:hover { background: var(--gold-dim); }
 .auth-link {
   text-align: center; margin-top: 1.25rem;
   font-size: .82rem; color: var(--muted);
@@ -148,7 +153,7 @@ body {
   display: none;
 }
 .success-msg {
-  background: #10b98115; border: 1px solid #10b98130;
+  background: #10b98115; border: 1px solid #10b98133;
   color: var(--success); border-radius: 8px;
   padding: .6rem .9rem; font-size: .82rem; margin-bottom: 1rem;
   display: none;
@@ -335,31 +340,13 @@ body {
 }
 .suggestion-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
 
-/* Estilos da nova Seção de Perfil */
-.profile-container {
-  max-width: 600px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+.profile-wrapper {
+  max-width: 580px;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2rem;
-  margin-top: 1rem;
 }
-.info-badge {
-  background: var(--border);
-  padding: .4rem .8rem;
-  border-radius: 6px;
-  font-size: .85rem;
-  color: var(--text);
-  display: inline-block;
-  margin-top: .2rem;
-}
-.danger-zone {
-  margin-top: 2.5rem;
-  border-top: 1px solid #ef444433;
-  padding-top: 1.5rem;
-}
-.danger-zone h4 { color: var(--error); font-family: 'Syne', sans-serif; margin-bottom: .5rem; }
-.danger-zone p { font-size: .8rem; color: var(--muted2); margin-bottom: 1rem; }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -543,38 +530,37 @@ body {
 
     <div class="page" id="page-profile">
       <div class="dash-content">
-        <div class="profile-container">
+        <div class="profile-wrapper">
           <div class="error-msg" id="profile-error"></div>
           <div class="success-msg" id="profile-success"></div>
-
-          <div class="form-row" style="margin-bottom: 1rem;">
-            <div class="form-group">
-              <label>Empresa Vinculada (ID)</label>
-              <div class="info-badge" id="prof-empresa-id">—</div>
-            </div>
-            <div class="form-group">
-              <label>Nível de Acesso</label>
-              <div class="info-badge" id="prof-nivel">—</div>
-            </div>
+          
+          <div class="form-group">
+            <label>Nível de Acesso</label>
+            <select id="prof-nivel" disabled>
+              <option value="operador">Operador</option>
+              <option value="gerente">Gerente</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
-
-          <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
 
           <div class="form-group">
             <label>Nome Completo</label>
-            <input type="text" id="prof-nome" placeholder="Seu nome">
+            <input type="text" id="prof-nome" placeholder="Seu nome" disabled>
           </div>
+
           <div class="form-group">
             <label>E-mail</label>
-            <input type="email" id="prof-email" placeholder="seu@email.com">
+            <input type="email" id="prof-email" placeholder="seu@email.com" disabled>
           </div>
 
-          <button class="btn-main" id="btn-save-profile" onclick="updateProfile()">Salvar Alterações</button>
+          <div class="form-group">
+            <label>ID da Empresa Vinculada</label>
+            <input type="number" id="prof-empresa" placeholder="Ex: 1" disabled>
+          </div>
 
-          <div class="danger-zone">
-            <h4>Zona de Perigo</h4>
-            <p>Ao excluir sua conta, todos os seus dados serão apagados permanentemente do sistema Helios.</p>
-            <button class="btn-main btn-danger" id="btn-delete-account" onclick="deleteAccount()">Excluir Minha Conta</button>
+          <div style="display: flex; gap: .75rem; margin-top: 1.5rem;">
+            <button class="btn-main btn-secondary" id="btn-edit" onclick="toggleEditProfile()">Editar Dados</button>
+            <button class="btn-main" id="btn-save-profile" onclick="saveProfileChanges()" style="display:none; margin-top:0;">Salvar Alterações</button>
           </div>
         </div>
       </div>
@@ -585,6 +571,8 @@ body {
 
 <script>
 const BASE = 'http://localhost:8050';
+let currentUser = null;
+let isEditingProfile = false;
 
 function apiFetch(path, options = {}) {
   return fetch(BASE + path, {
@@ -594,8 +582,6 @@ function apiFetch(path, options = {}) {
   });
 }
 
-let currentUser = null;
-
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -603,7 +589,7 @@ function showScreen(id) {
 
 function setLoading(btnId, loading, label) {
   const btn = document.getElementById(btnId);
-  if(btn) {
+  if (btn) {
     btn.disabled = loading;
     btn.textContent = loading ? 'Aguarde…' : label;
   }
@@ -611,7 +597,7 @@ function setLoading(btnId, loading, label) {
 
 function showError(elId, msg) {
   const el = document.getElementById(elId);
-  if(el) {
+  if (el) {
     el.textContent = msg;
     el.style.display = 'block';
   }
@@ -619,19 +605,19 @@ function showError(elId, msg) {
 
 function hideError(elId) {
   const el = document.getElementById(elId);
-  if(el) el.style.display = 'none';
+  if (el) el.style.display = 'none';
 }
 
 function showSuccess(elId, msg) {
   const el = document.getElementById(elId);
-  if(el) {
+  if (el) {
     el.textContent = msg;
     el.style.display = 'block';
     setTimeout(() => { el.style.display = 'none'; }, 4000);
   }
 }
 
-// ─── LOGIN ───
+// ─── LOGIN CORRIGIDO (Extrai corretamente de data.data caso encapsulado pelo PHP) ───
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value.trim();
@@ -650,19 +636,20 @@ async function doLogin() {
     });
     const data = await r.json();
     if (r.ok) {
-      currentUser = data.usuario || data;
+      // GARANTE a leitura independente de vir como data.data, data.usuario ou direto
+      currentUser = data.data || data.usuario || data;
       enterApp(currentUser);
     } else {
       showError('login-error', data.message || 'E-mail ou senha incorretos.');
     }
   } catch (e) {
-    showError('login-error', 'Não foi possível conectar à API (localhost:8050). Verifique se o backend está rodando.');
+    showError('login-error', 'Não foi possível conectar à API (localhost:8050). Verifique se o Docker está rodando.');
   } finally {
     setLoading('btn-login', false, 'Entrar na plataforma');
   }
 }
 
-// ─── CADASTRO ───
+// ─── CADASTRO CORRIGIDO ───
 async function doRegister() {
   const nome       = document.getElementById('reg-nome').value.trim();
   const email      = document.getElementById('reg-email').value.trim();
@@ -692,19 +679,19 @@ async function doRegister() {
     });
     const data = await r.json();
     if (r.ok) {
-      currentUser = data.usuario || data;
+      currentUser = data.data || data.usuario || data;
       enterApp(currentUser);
     } else {
       showError('reg-error', data.message || 'Erro ao criar conta. Verifique os dados.');
     }
   } catch (e) {
-    showError('reg-error', 'Não foi possível conectar à API (localhost:8050). Verifique se o backend está rodando.');
+    showError('reg-error', 'Não foi possível conectar à API (localhost:8050). Verifique se o Docker está rodando.');
   } finally {
     setLoading('btn-register', false, 'Criar conta');
   }
 }
 
-// ─── MONITORIZAÇÃO DA SESSÃO E DA INTERFACE ───
+// ─── ADICIONA E POPULA TODOS OS CAMPOS DO PERFIL ───
 function enterApp(user) {
   const nome = user.nome || user.email || 'Usuário';
   const iniciais = nome.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
@@ -715,15 +702,89 @@ function enterApp(user) {
   document.getElementById('sidebar-role').textContent = capitalize(role);
   document.getElementById('welcome-title').textContent = `Olá, ${nome.split(' ')[0]}!`;
 
-  // Popular os inputs e badges da tela "Meu Perfil"
-  document.getElementById('prof-nome').value = nome;
+  // Mapeamento e renderização segura dos dados no formulário de Perfil
+  document.getElementById('prof-nivel').value = role;
+  document.getElementById('prof-nome').value = user.nome || '';
   document.getElementById('prof-email').value = user.email || '';
-  document.getElementById('prof-empresa-id').textContent = user.empresa_id ? `ID: ${user.empresa_id}` : 'Nenhuma';
-  document.getElementById('prof-nivel').textContent = capitalize(role);
+  document.getElementById('prof-empresa').value = user.empresa_id || '';
 
   showScreen('app-screen');
   loadDashStats();
   checkDbApp();
+}
+
+// ─── CONTROLE DE EDIÇÃO DO PERFIL ───
+function toggleEditProfile() {
+  isEditingProfile = !isEditingProfile;
+  const inputs = ['prof-nome', 'prof-email', 'prof-empresa'];
+  
+  inputs.forEach(id => {
+    document.getElementById(id).disabled = !isEditingProfile;
+  });
+
+  const btnEdit = document.getElementById('btn-edit');
+  const btnSave = document.getElementById('btn-save-profile');
+
+  if (isEditingProfile) {
+    btnEdit.textContent = 'Cancelar';
+    btnSave.style.display = 'block';
+  } else {
+    btnEdit.textContent = 'Editar Dados';
+    btnSave.style.display = 'none';
+    
+    // Desfaz alterações na interface puxando do objeto em memória
+    document.getElementById('prof-nivel').value = currentUser.nivel_acesso || 'operador';
+    document.getElementById('prof-nome').value = currentUser.nome || '';
+    document.getElementById('prof-email').value = currentUser.email || '';
+    document.getElementById('prof-empresa').value = currentUser.empresa_id || '';
+    hideError('profile-error');
+  }
+}
+
+// Envia os dados via PUT mapeando a assinatura do método update($id) no seu PHP
+async function saveProfileChanges() {
+  hideError('profile-error');
+  const nome = document.getElementById('prof-nome').value.trim();
+  const email = document.getElementById('prof-email').value.trim();
+  const empresa_id = document.getElementById('prof-empresa').value;
+
+  if (!nome || !email) {
+    showError('profile-error', 'Nome e E-mail são obrigatórios.');
+    return;
+  }
+
+  setLoading('btn-save-profile', true, 'Aguarde...');
+  try {
+    const idUsuario = currentUser.id || currentUser.usuario_id;
+    const r = await apiFetch('/usuarios', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: idUsuario,
+        nome,
+        email,
+        empresa_id: empresa_id ? parseInt(empresa_id) : null
+      })
+    });
+
+    const resData = await r.json();
+
+    if (r.ok) {
+      // Sincroniza localmente as atualizações aceitas pelo servidor PHP
+      currentUser.nome = nome;
+      currentUser.email = email;
+      currentUser.empresa_id = empresa_id ? parseInt(empresa_id) : null;
+      
+      enterApp(currentUser);
+      toggleEditProfile();
+      showSuccess('profile-success', 'Dados atualizados com sucesso!');
+    } else {
+      showError('profile-error', resData.message || 'Erro ao salvar alterações.');
+    }
+  } catch (e) {
+    showError('profile-error', 'Erro de comunicação com o servidor da API.');
+  } finally {
+    setLoading('btn-save-profile', false, 'Salvar Alterações');
+  }
 }
 
 function doLogout() {
@@ -740,7 +801,7 @@ function doLogout() {
   document.getElementById('suggestions').style.display = 'flex';
 }
 
-// ─── NAVEGAÇÃO INTERNA ───
+// ─── NAVEGAÇÃO ───
 function navTo(page, btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -750,137 +811,19 @@ function navTo(page, btn) {
   const titles = { 
     dash: ['Dashboard', 'Visão geral do sistema'], 
     chat: ['Chat com IA', 'Assistente Helios'],
-    profile: ['Meu Perfil', 'Gerenciamento de conta']
+    profile: ['Meu Perfil', 'Gerenciamento dos seus dados'] 
   };
   document.getElementById('topbar-title').textContent = titles[page][0];
   document.getElementById('topbar-sub').textContent = titles[page][1];
 }
 
 function navToChat() {
-  const chatBtn = document.querySelectorAll('.nav-btn')[1];
-  navTo('chat', chatBtn);
+  const btnChat = document.querySelectorAll('.nav-btn')[1];
+  navTo('chat', btnChat);
   document.getElementById('chatInput').focus();
 }
 
-// ─── UPDATE E DELETE (CONECTADOS DIRETAMENTE AO SEU CONTROLLER PHP) ───
-async function updateProfile() {
-  hideError('profile-error');
-  const nome = document.getElementById('prof-nome').value.trim();
-  const email = document.getElementById('prof-email').value.trim();
-
-  if(!nome || !email) {
-    showError('profile-error', 'Os campos Nome e E-mail não podem ficar vazios.');
-    return;
-  }
-
-  // Descobre onde está o ID do utilizador na sessão de forma segura (tenta todas as combinações comuns)
-  const userId = currentUser.id || currentUser.usuario_id || (currentUser.data ? (currentUser.data.id || currentUser.data.usuario_id) : null);
-
-  if (!userId) {
-    showError('profile-error', 'Erro interno: ID do utilizador logado não foi encontrado.');
-    return;
-  }
-
-  setLoading('btn-save-profile', true, 'Salvar Alterações');
-  try {
-    const r = await apiFetch('/usuarios', {
-      method: 'PUT',
-      body: JSON.stringify({
-        id: parseInt(userId), // Força a conversão para número inteiro
-        nome: nome,
-        email: email
-      })
-    });
-    
-    const resData = await r.json();
-    
-    if(r.ok) {
-      // Se a API retornar a estrutura padrão .data, atualiza o currentUser com ela
-      if (resData.data) {
-        currentUser = resData.data;
-      } else {
-        currentUser.nome = nome;
-        currentUser.email = email;
-      }
-      enterApp(currentUser); 
-      showSuccess('profile-success', 'Dados atualizados com sucesso!');
-    } else {
-      showError('profile-error', resData.message || 'Erro ao atualizar dados.');
-    }
-  } catch(e) {
-    showError('profile-error', 'Erro de conexão com o servidor API.');
-  } finally {
-    setLoading('btn-save-profile', false, 'Salvar Alterações');
-  }
-}
-
-async function deleteAccount() {
-  if(!confirm('Tem certeza absoluta que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-    return;
-  }
-
-  hideError('profile-error');
-  
-  // Mesma verificação protetora para o ID
-  const userId = currentUser.id || currentUser.usuario_id || (currentUser.data ? (currentUser.data.id || currentUser.data.usuario_id) : null);
-
-  if (!userId) {
-    showError('profile-error', 'Erro interno: ID do utilizador não encontrado.');
-    return;
-  }
-
-  setLoading('btn-delete-account', true, 'Excluindo...');
-  
-  try {
-    const r = await apiFetch('/usuarios', {
-      method: 'DELETE',
-      body: JSON.stringify({ id: parseInt(userId) }) // Força a conversão para número inteiro
-    });
-    
-    if(r.ok) {
-      alert('Sua conta foi excluída com sucesso.');
-      doLogout();
-    } else {
-      const data = await r.json().catch(() => ({}));
-      showError('profile-error', data.message || 'Não foi possível excluir a conta.');
-    }
-  } catch(e) {
-    showError('profile-error', 'Erro de conexão ao tentar deletar conta.');
-  } finally {
-    setLoading('btn-delete-account', false, 'Excluindo Minha Conta');
-  }
-}
-
-async function deleteAccount() {
-  if(!confirm('Tem certeza absoluta que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-    return;
-  }
-
-  hideError('profile-error');
-  setLoading('btn-delete-account', true, 'Excluindo...');
-  
-  try {
-    // Envia DELETE /usuarios contendo o id do usuário logado
-    const r = await apiFetch('/usuarios', {
-      method: 'DELETE',
-      body: JSON.stringify({ id: currentUser.id })
-    });
-    
-    if(r.ok) {
-      alert('Sua conta foi excluída com sucesso.');
-      doLogout();
-    } else {
-      const data = await r.json().catch(() => ({}));
-      showError('profile-error', data.message || 'Não foi possível excluir a conta.');
-    }
-  } catch(e) {
-    showError('profile-error', 'Erro de conexão ao tentar deletar conta.');
-  } finally {
-    setLoading('btn-delete-account', false, 'Excluindo Minha Conta');
-  }
-}
-
-// ─── ESTATÍSTICAS DO DASHBOARD ───
+// ─── DASHBOARD ───
 async function loadDashStats() {
   const endpoints = [
     ['stat-usinas',   '/usinas'],
@@ -891,9 +834,7 @@ async function loadDashStats() {
     try {
       const r = await apiFetch(path);
       const d = await r.json();
-      // Trata as respostas padronizadas oriundas do Controller
-      const payload = d.data !== undefined ? d.data : d;
-      const count = Array.isArray(payload) ? payload.length : (payload.total || payload.count || '—');
+      const count = Array.isArray(d) ? d.length : (d.total || d.count || '—');
       document.getElementById(id).textContent = count;
     } catch {
       document.getElementById(id).textContent = '—';
@@ -915,7 +856,7 @@ async function checkDbApp() {
   }
 }
 
-// ─── MÓDULO DE CHAT IA ───
+// ─── CHAT ───
 function useSuggestion(btn) {
   document.getElementById('chatInput').value = btn.textContent;
   document.getElementById('suggestions').style.display = 'none';
@@ -994,11 +935,11 @@ async function sendChat() {
     }
   } catch(e) {
     removeTyping();
-    appendMsg('ia', 'Erro de conexão com a API (localhost:8050). Verifique se o backend está rodando.');
+    appendMsg('ia', 'Erro de conexão com a API (localhost:8050). Verifique se o Docker está rodando.');
   }
 }
 
-// ─── UTILITÁRIOS ───
+// ─── UTILS ───
 function getInitials() {
   const nome = currentUser?.nome || 'U';
   return nome.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
@@ -1013,4 +954,3 @@ document.getElementById('reg-senha2').addEventListener('keydown', e => { if(e.ke
 </script>
 </body>
 </html>
-
