@@ -75,9 +75,11 @@ try {
  
             if ($id === null) {
                 match ($method) {
-                    'GET'  => $ctrl->index(),
-                    'POST' => $ctrl->store(),
-                    default => jsonError('Método não permitido', 405),
+                    'GET'    => $ctrl->index(),
+                    'POST'   => $ctrl->store(),
+                    'PUT'    => $ctrl->update(),   // ◄ Aceita PUT vindo do Perfil (ID no JSON)
+                    'DELETE' => $ctrl->destroy(),  // ◄ Aceita DELETE vindo do Perfil (ID no JSON)
+                    default  => jsonError('Método não permitido', 405),
                 };
                 break;
             }
