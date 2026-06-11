@@ -2,46 +2,45 @@
 
 class ChatController {
 
-    private string $apiKey;
-    private string $apiUrl = 'https://api.anthropic.com/v1/messages';
-
-    public function __construct() {
-        // Coloque sua chave aqui ou use variável de ambiente
-        $this->apiKey = getenv('ANTHROPIC_API_KEY') ?: 'SUA_CHAVE_AQUI';
-    }
+    // No Windows com Docker Desktop, host.docker.internal funciona muito bem
+    private string $ollamaUrl = 'http://host.docker.internal:11434/api/chat';
 
     public function chat(): void {
         header('Content-Type: application/json; charset=utf-8');
 
         $body = json_decode(file_get_contents('php://input'), true);
-        $pergunta = trim($body['pergunta'] ?? '');
+        $pergunta    = trim($body['pergunta'] ?? '');
+        $usuario_id  = $body['usuario_id'] ?? null;
+        $conversa_id = $body['conversa_id'] ?? null;
 
-        if (!$pergunta) {
+        if (empty($pergunta)) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Campo pergunta é obrigatório.']);
             return;
         }
 
+        $messages = $this->buscarHistorico($usuario_id, $conversa_id);
+        $messages[] = ['role' => 'user', 'content' => $pergunta];
+
         $payload = json_encode([
-            'model'      => 'claude-sonnet-4-20250514',
-            'max_tokens' => 1000,
-            'system'     => 'Você é a Helios IA, assistente técnica especializada em energia solar, usinas fotovoltaicas, eólicas e hídricas, telemetria, normas ABNT e gestão de usinas. Responda em português do Brasil, de forma clara, técnica e prática.',
-            'messages'   => [
-                ['role' => 'user', 'content' => $pergunta]
+            'model'      => 'Helios-AI',
+            'messages'   => $messages,
+            'stream'     => false,
+            'temperature'=> 0.75,
+            'max_tokens' => 1500,
+            'options'    => [
+                'num_ctx' => 8192
             ]
         ]);
 
-        $ch = curl_init($this->apiUrl);
+        $ch = curl_init($this->ollamaUrl);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'x-api-key: ' . $this->apiKey,
-                'anthropic-version: 2023-06-01',
-            ],
-            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_TIMEOUT        => 90,      // Ollama local pode ser lento
+            CURLOPT_CONNECTTIMEOUT => 10,
         ]);
 
         $response = curl_exec($ch);
@@ -51,23 +50,41 @@ class ChatController {
 
         if ($curlError) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Erro de conexão com a IA: ' . $curlError]);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Não foi possível conectar ao Ollama. Verifique se ele está rodando.'
+            ]);
+            return;
+        }
+
+        if ($httpCode !== 200) {
+            http_response_code(502);
+            echo json_encode(['success' => false, 'message' => 'Erro ao comunicar com Ollama']);
             return;
         }
 
         $data = json_decode($response, true);
+        $resposta = $data['message']['content'] ?? 'Helios não conseguiu responder no momento.';
 
-        if ($httpCode !== 200) {
-            http_response_code(502);
-            echo json_encode(['success' => false, 'message' => $data['error']['message'] ?? 'Erro na API da IA.']);
-            return;
-        }
-
-        $resposta = $data['content'][0]['text'] ?? 'Sem resposta.';
+        // Salvar histórico
+        $this->salvarMensagem($usuario_id, $conversa_id, $pergunta, 'user');
+        $this->salvarMensagem($usuario_id, $conversa_id, $resposta, 'assistant');
 
         echo json_encode([
-            'success'  => true,
-            'resposta' => $resposta,
+            'success'     => true,
+            'resposta'    => $resposta,
+            'conversa_id' => $conversa_id
         ]);
+    }
+
+    private function buscarHistorico($usuario_id, $conversa_id): array
+    {
+        // TODO: implementar depois
+        return [];
+    }
+
+    private function salvarMensagem($usuario_id, $conversa_id, string $conteudo, string $role): void
+    {
+        // TODO: implementar depois usando HistoricoChatController
     }
 }
