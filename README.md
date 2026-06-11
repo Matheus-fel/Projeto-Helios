@@ -1,5 +1,7 @@
 # WebServer - Docker (Nginx + PHP-FPM + MySQL)
 
+## Download para a Inteligencia Artificial presente no projeto
+---->[Helios AI](huggingface.co/Edmurk/Helios) <----
 ## Arquitetura
 
 - **Nginx** → Servidor web (porta 8050)
