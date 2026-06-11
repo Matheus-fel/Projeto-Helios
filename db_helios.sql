@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: mysql:3306
--- Tempo de geração: 02/06/2026 às 15:14
+-- Tempo de geração: 11/06/2026 às 00:15
 -- Versão do servidor: 8.0.45
 -- Versão do PHP: 8.3.26
 
@@ -40,8 +40,7 @@ CREATE TABLE `empresas` (
 
 INSERT INTO `empresas` (`id`, `nome_comercial`, `cnpj`, `data_adesao`) VALUES
 (1, 'helios', '1212121212122', '2026-05-30 15:01:01'),
-(2, 'marvel', '12324234234234', '2026-05-30 15:03:21'),
-(3, 'Teste', '00.000.000/0001-00', '2026-05-30 15:08:13');
+(2, 'marvel', '12324234234234', '2026-05-30 15:03:21');
 
 -- --------------------------------------------------------
 
@@ -95,7 +94,7 @@ CREATE TABLE `usinas` (
 
 CREATE TABLE `usuarios` (
   `id` int NOT NULL,
-  `empresa_id` int NOT NULL,
+  `empresa_id` int DEFAULT NULL,
   `nome` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `senha_hash` text NOT NULL,
@@ -107,7 +106,8 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id`, `empresa_id`, `nome`, `email`, `senha_hash`, `nivel_acesso`) VALUES
-(2, 2, 'Samuel Antunes de Oliveira Gomes', 'samuelantuneso@icloud.com', '$2y$10$NM0rR45AMU98CEU2HIZ/OO1gUg6XrpHi52ddjHbh/E6CfaVm299uG', 'admin');
+(2, 2, 'Samuel Antunes de Oliveira Gomes', 'samuelantuneso@icloud.com', '$2y$10$NM0rR45AMU98CEU2HIZ/OO1gUg6XrpHi52ddjHbh/E6CfaVm299uG', 'admin'),
+(10, 2, 'teste21', 'teste21@gmail.com', '$2y$10$JO9cgVTUJu/BH6usgHgmxuHvyXgTqqlqrbOQuT8FM2AnAY59NL2r6', 'operador');
 
 --
 -- Índices para tabelas despejadas
@@ -151,40 +151,6 @@ ALTER TABLE `usuarios`
   ADD KEY `fk_usuarios_empresa` (`empresa_id`);
 
 --
--- AUTO_INCREMENT para tabelas despejadas
---
-
---
--- AUTO_INCREMENT de tabela `empresas`
---
-ALTER TABLE `empresas`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-
---
--- AUTO_INCREMENT de tabela `historico_chat`
---
-ALTER TABLE `historico_chat`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de tabela `telemetria`
---
-ALTER TABLE `telemetria`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de tabela `usinas`
---
-ALTER TABLE `usinas`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de tabela `usuarios`
---
-ALTER TABLE `usuarios`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
 -- Restrições para tabelas despejadas
 --
 
@@ -216,3 +182,4 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+```
