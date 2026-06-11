@@ -20,40 +20,33 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: php_server           # Nome próximo ao "Apache + PHP"
+    container_name: php_server           
     volumes:
       - ./www:/var/www/html
     working_dir: /var/www/html
     depends_on:
       mysql:
-        condition: service_healthy
+        condition: service_started
     networks:
       - rede_interna1
     restart: unless-stopped
 
   mysql:
     image: mysql:8.0
-    container_name: mysql_db             # Nome mais próximo do diagrama
+    container_name: mysql             
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: db_helios
-      MYSQL_USER: aluno
-      MYSQL_PASSWORD: "123456"
     ports:
       - "3356:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./initdb:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
     networks:
-      - rede_interna2                     # Totalmente isolada
+      - rede_interna2
+      - rede_interna1
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest

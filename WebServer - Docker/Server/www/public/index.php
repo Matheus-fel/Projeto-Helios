@@ -10,7 +10,7 @@
     --surface: #0f111a; 
     --surface-hover: #171a26;
     --border: #1e2235;
-    --accent: #f59e0b; 
+    --accent: #2e210d; 
     --accent-rgb: 245, 158, 11;
     --accent2: #ff6b35; 
     --text: #e2e8f0;
@@ -143,4 +143,4 @@
   /* LOADING ANIMATIONS */
   .loading { display: flex; align-items: center; justify-content: center; gap: .5rem; color: #64748b; font-size: .82rem; padding: 2rem; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner { width: 16px; height: 16
+  .spinner { width: 16px; height: 16 }
