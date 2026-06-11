@@ -1,64 +1,88 @@
 version: "3.8"
 
 services:
-  apache:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: apache_server
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy          # Nome mais próximo do diagrama
     ports:
       - "8050:80"
     volumes:
       - ./www:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+    networks:
+      - rede_externa
+      - rede_interna1
+    restart: unless-stopped
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: php_server           # Nome próximo ao "Apache + PHP"
+    volumes:
+      - ./www:/var/www/html
     working_dir: /var/www/html
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
-      - app_net
+      - rede_interna1
+    restart: unless-stopped
 
   mysql:
     image: mysql:8.0
-    container_name: mysql_server
+    container_name: mysql_db             # Nome mais próximo do diagrama
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password
     environment:
-      # Material usado para fins didaticos, ao usar em modo produção é recomendado adicionar as configurações de segurança em um arquivo .env
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: projeto
+      MYSQL_DATABASE: db_helios
       MYSQL_USER: aluno
       MYSQL_PASSWORD: "123456"
     ports:
       - "3356:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./initdb:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
-      - app_net
+      - rede_interna2                     # Totalmente isolada
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
-    container_name: phpmyadmin_server
+    container_name: phpmyadmin
     restart: unless-stopped
     ports:
       - "8051:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_ARBITRARY: 1
     depends_on:
       - mysql
     networks:
-      - app_net
+      - rede_interna1
 
 volumes:
   mysql_data:
-  vendor_data:
-  composer_cache:
+    driver: local
 
 networks:
-  app_net:
+  rede_externa:
+    driver: bridge
+    name: rede_externa
 
+  rede_interna1:
+    driver: bridge
+    name: rede_interna1
+
+  rede_interna2:
+    driver: bridge
+    internal: true
+    name: rede_interna2
