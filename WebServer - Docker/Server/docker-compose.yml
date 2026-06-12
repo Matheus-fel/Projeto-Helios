@@ -3,7 +3,7 @@ version: "3.8"
 services:
   nginx:
     image: nginx:alpine
-    container_name: nginx_proxy          # Nome mais próximo do diagrama
+    container_name: nginx_proxy
     ports:
       - "8050:80"
     volumes:
@@ -12,9 +12,12 @@ services:
     depends_on:
       - php
     networks:
-      - rede_externa
-      - rede_interna1
+      rede_externa: {}
+      rede_interna1:
+        aliases:
+          - nginx_proxy
     restart: unless-stopped
+    
 
   php:
     build:
@@ -39,24 +42,25 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: db_helios
-    ports:
-      - "3356:3306"
+    #ports:
+    #  - "3356:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./initdb:/docker-entrypoint-initdb.d
     networks:
-      - rede_interna2
+#      - rede_interna2
       - rede_interna1
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     container_name: phpmyadmin
     restart: unless-stopped
-    ports:
-      - "8051:80"
+    #ports:
+    #  - "8051:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
+      PMA_ABSOLUTE_URI: http://localhost:8050/phpmyadmin/
     depends_on:
       - mysql
     networks:
@@ -73,9 +77,10 @@ networks:
 
   rede_interna1:
     driver: bridge
+    internal: true
     name: rede_interna1
 
-  rede_interna2:
-    driver: bridge
-    internal: true
-    name: rede_interna2
+#  rede_interna2:
+#    driver: bridge
+#    internal: true
+#    name: rede_interna2

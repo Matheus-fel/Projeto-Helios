@@ -9,6 +9,11 @@
 - **MySQL 8.0** → Banco de dados
 - **phpMyAdmin** → Interface web (porta 8051)
 
+link para o [Diagrama de redes do docker](https://drive.google.com/file/d/1NvmEF4hLQMWwdvzO_TSISjyE5SM3O_3L/view?usp=sharing)
+ 
+## Link para Download da Inteligencia Artificial
+[Helios-AI](https://huggingface.co/edmurk/Helios-AI)
+
 ## Redes Docker (Isolamento)
 
 - **`frontend_net`** → Rede pública (exposta externamente)
@@ -44,7 +49,7 @@ docker network inspect backend_net
 
 | Rede           | Tipo       | Internal | Containers                     | Finalidade                     |
 |----------------|------------|----------|--------------------------------|--------------------------------|
-| frontend_net   | bridge     | false    | nginx                          | Exposição externa (porta 8050) |
-| backend_net    | bridge     | true     | php, mysql, phpmyadmin         | Isolamento interno de banco    |
+| rede_externa   | bridge     | false    | nginx                          | Exposição externa (porta 8050) |
+| rede_interna    | bridge     | true     | php, mysql, phpmyadmin         | Isolamento interno de banco    |
 
 **Benefício do isolamento**: O banco de dados MySQL fica inacessível diretamente da máquina host ou da internet, só sendo acessível via Nginx → PHP.
