@@ -31,6 +31,7 @@ CREATE TABLE `empresas` (
   `id` int NOT NULL,
   `nome_comercial` varchar(150) NOT NULL,
   `cnpj` varchar(20) NOT NULL,
+  `codigo_acesso` varchar(50) NOT NULL,
   `data_adesao` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -38,9 +39,9 @@ CREATE TABLE `empresas` (
 -- Despejando dados para a tabela `empresas`
 --
 
-INSERT INTO `empresas` (`id`, `nome_comercial`, `cnpj`, `data_adesao`) VALUES
-(1, 'helios', '1212121212122', '2026-05-30 15:01:01'),
-(2, 'marvel', '12324234234234', '2026-05-30 15:03:21');
+INSERT INTO `empresas` (`id`, `nome_comercial`, `cnpj`, `codigo_acesso`, `data_adesao`) VALUES
+(1, 'helios', '1212121212122', 'HELIOS2026', '2026-05-30 15:01:01'),
+(2, 'marvel', '12324234234234', 'MARVEL99', '2026-05-30 15:03:21');
 
 -- --------------------------------------------------------
 
@@ -59,34 +60,6 @@ CREATE TABLE `historico_chat` (
 
 -- --------------------------------------------------------
 
---
--- Estrutura para tabela `telemetria`
---
-
-CREATE TABLE `telemetria` (
-  `id` bigint NOT NULL,
-  `usina_id` int NOT NULL,
-  `parametro` varchar(50) NOT NULL,
-  `valor_leitura` decimal(15,4) NOT NULL,
-  `data_hora` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Estrutura para tabela `usinas`
---
-
-CREATE TABLE `usinas` (
-  `id` int NOT NULL,
-  `empresa_id` int NOT NULL,
-  `nome_usina` varchar(100) NOT NULL,
-  `tipo_geracao` enum('solar','eolica','hidro','termica','biomassa') NOT NULL,
-  `capacidade_mw` decimal(10,2) DEFAULT NULL,
-  `localizacao_cidade` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
 
 --
 -- Estrutura para tabela `usuarios`
