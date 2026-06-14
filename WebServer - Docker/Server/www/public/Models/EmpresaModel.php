@@ -18,4 +18,11 @@ class EmpresaModel extends Model {
         $stmt->execute([$empresaId]);
         return $stmt->fetchAll();
     }
+
+    /** Busca uma empresa pelo seu código de acesso gerado */
+    public function findByCodigo(string $codigo): array|false {
+        $stmt = $this->db->prepare("SELECT id FROM {$this->table} WHERE codigo_acesso = ? LIMIT 1");
+        $stmt->execute([$codigo]);
+        return $stmt->fetch();
+    }
 }

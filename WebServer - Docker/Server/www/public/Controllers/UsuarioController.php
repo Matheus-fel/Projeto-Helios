@@ -26,7 +26,8 @@ class UsuarioController extends Controller {
     public function store(): void {
         $data = $this->body();
  
-        foreach (['nome', 'email', 'senha'] as $f) {
+        // Validação dos campos obrigatórios globais
+        foreach (['nome', 'email', 'senha', 'nivel_acesso'] as $f) {
             if (empty($data[$f])) $this->error("Campo obrigatorio: $f", 422);
         }
  
@@ -34,9 +35,32 @@ class UsuarioController extends Controller {
             $this->error('E-mail ja cadastrado', 409);
         }
  
-        $data['nivel_acesso'] = $data['nivel_acesso'] ?? 'operador';
-        $data['empresa_id']   = !empty($data['empresa_id']) ? (int) $data['empresa_id'] : null;
+        // Validação do código de vinculação da empresa
+        if ($data['nivel_acesso'] === 'admin') {
+            $data['empresa_id'] = null;
+        } else {
+            // Gestores e Operadores PRECISAM fornecer o código de uma empresa ativa
+            if (empty($data['codigo_acesso'])) {
+                $this->error('Codigo de acesso da empresa e obrigatorio para este nivel.', 422);
+            }
+
+            // Instancia o EmpresaModel pra validar o código de convite
+            require_once __DIR__ . '/../models/EmpresaModel.php';
+            $empresaModel = new EmpresaModel();
+            $empresa = $empresaModel->findByCodigo(trim($data['codigo_acesso']));
+
+            if (!$empresa) {
+                $this->error('Codigo de acesso invalido. Empresa nao encontrada.', 404);
+            }
+
+            // Amarra o ID da empresa encontrada no payload do novo usuário
+            $data['empresa_id'] = (int) $empresa['id'];
+        }
  
+        // Remove o código de acesso pra que ele não tente ser inserido na tabela usuarios
+        unset($data['codigo_acesso']);
+ 
+        // 3. Criação do usuário repassando o array com o empresa_id correto
         $id = $this->model->criar($data);
         $usuario = $this->model->find($id);
         unset($usuario['senha_hash']);
