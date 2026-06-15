@@ -5,6 +5,9 @@ require_once __DIR__ . '/../models/UsuarioModel.php';
  
 class UsuarioController extends Controller {
     private UsuarioModel $model;
+
+    /** Chave master fixa exigida para cadastro de administradores. Troque por uma chave forte/secreta. */
+    private const ADMIN_MASTER_KEY = 'h7lio_adm';
  
     public function __construct() {
         $this->model = new UsuarioModel();
@@ -37,6 +40,11 @@ class UsuarioController extends Controller {
  
         // Validação do código de vinculação da empresa
         if ($data['nivel_acesso'] === 'admin') {
+            // Cadastro de admin exige chave master fixa (definida no topo desta classe)
+            if (empty($data['chave_admin']) || !hash_equals(self::ADMIN_MASTER_KEY, (string) $data['chave_admin'])) {
+                $this->error('Chave master invalida para cadastro de administrador.', 403);
+            }
+
             $data['empresa_id'] = null;
         } else {
             // Gestores e Operadores PRECISAM fornecer o código de uma empresa ativa
@@ -57,8 +65,8 @@ class UsuarioController extends Controller {
             $data['empresa_id'] = (int) $empresa['id'];
         }
  
-        // Remove o código de acesso pra que ele não tente ser inserido na tabela usuarios
-        unset($data['codigo_acesso']);
+        // Remove campos auxiliares pra que não tentem ser inseridos na tabela usuarios
+        unset($data['codigo_acesso'], $data['chave_admin']);
  
         // 3. Criação do usuário repassando o array com o empresa_id correto
         $id = $this->model->criar($data);
