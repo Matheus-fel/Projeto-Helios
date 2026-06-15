@@ -432,8 +432,8 @@ body {
         </select>
       </div>
       <div class="form-group" id="group-empresa">
-        <label>ID da Empresa</label>
-        <input type="number" id="reg-empresa" placeholder="1">
+        <label>Código de Acesso da Empresa</label>
+        <input type="text" id="reg-codigo-acesso" placeholder="Ex: ABC123">
       </div>
     </div>
     <div class="form-group" id="group-chave-admin" style="display: none;">
@@ -464,6 +464,9 @@ body {
       
       <button class="nav-btn" id="nav-admin-empresas" onclick="navTo('admin-empresas', this)" style="display: none;">
         <span class="nav-icon">🏢</span> Cadastrar Empresa
+      </button>
+      <button class="nav-btn" id="nav-admin-lista-empresas" onclick="navTo('admin-lista-empresas', this)" style="display: none;">
+        <span class="nav-icon">📋</span> Empresas Cadastradas
       </button>
       <button class="nav-btn" id="nav-gerente-equipe" onclick="navTo('gerente-equipe', this)" style="display: none;">
         <span class="nav-icon">👥</span> Equipe da Empresa
@@ -542,6 +545,29 @@ body {
             <input type="text" id="emp-cnpj" placeholder="00.000.000/0001-00">
           </div>
           <button class="btn-main" id="btn-save-empresa" onclick="saveNovaEmpresa()">Registrar Empresa</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-admin-lista-empresas">
+      <div class="dash-content">
+        <h2 style="font-family:'Syne',sans-serif; color:var(--gold);">Empresas Cadastradas</h2>
+        <p style="font-size:0.83rem; color:var(--muted2); margin-bottom:1rem;">Visão geral das empresas parceiras do ecossistema Helios.</p>
+        <div style="overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;">
+          <table class="helios-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome Comercial</th>
+                <th>CNPJ</th>
+                <th>Código de Acesso</th>
+                <th>Data de Adesão</th>
+              </tr>
+            </thead>
+            <tbody id="table-empresas-body">
+              <tr><td colspan="5" style="text-align:center; color:var(--muted);">Carregando empresas...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -715,11 +741,11 @@ function toggleChaveAdminField() {
   const nivel = document.getElementById('reg-nivel').value;
   const groupChave = document.getElementById('group-chave-admin');
   const groupEmpresa = document.getElementById('group-empresa');
-  
+
   if (nivel === 'admin') {
     groupChave.style.display = 'block';
     groupEmpresa.style.display = 'none';
-    document.getElementById('reg-empresa').value = '';
+    document.getElementById('reg-codigo-acesso').value = '';
   } else {
     groupChave.style.display = 'none';
     groupEmpresa.style.display = 'block';
@@ -762,7 +788,7 @@ async function doRegister() {
   const email      = document.getElementById('reg-email').value.trim();
   const senha      = document.getElementById('reg-senha').value.trim();
   const senha2     = document.getElementById('reg-senha2').value.trim();
-  const empresa_id = document.getElementById('reg-empresa').value;
+  const codigo_acesso = document.getElementById('reg-codigo-acesso').value.trim();
   const nivel_acesso = document.getElementById('reg-nivel').value;
   const chave_admin = document.getElementById('reg-chave-admin').value.trim();
   hideError('reg-error');
@@ -775,23 +801,23 @@ async function doRegister() {
     showError('reg-error', 'As senhas não coincidem.');
     return;
   }
-  if (nivel_acesso === 'admin' && chave_admin !== 'h7lio_adm') {
-    showError('reg-error', 'Chave de acesso inválida para administrador.');
+  if (nivel_acesso === 'admin' && !chave_admin) {
+    showError('reg-error', 'A Chave Master é obrigatória para cadastro de administrador.');
     return;
   }
-  if ((nivel_acesso === 'gerente' || nivel_acesso === 'operador') && !empresa_id) {
-    showError('reg-error', 'O ID da Empresa é obrigatório para Gestores e Operadores.');
+  if ((nivel_acesso === 'gerente' || nivel_acesso === 'operador') && !codigo_acesso) {
+    showError('reg-error', 'O Código de Acesso da Empresa é obrigatório para Gestores e Operadores.');
     return;
   }
 
   setLoading('btn-register', true, 'Criar conta');
   try {
     const body = { nome, email, senha, nivel_acesso };
-    
+
     if (nivel_acesso === 'admin') {
-      body.empresa_id = 0; // Contorna restrição NOT NULL caso banco exija valor numérico
-    } else if (empresa_id) {
-      body.empresa_id = parseInt(empresa_id);
+      body.chave_admin = chave_admin;
+    } else {
+      body.codigo_acesso = codigo_acesso;
     }
 
     const r = await apiFetch('/usuarios', {
@@ -829,13 +855,16 @@ function enterApp(user) {
 
   // ─── LIBERAÇÃO E CARREGAMENTO DE TELAS BASEADO NO PERFIL ───
   document.getElementById('nav-admin-empresas').style.display = 'none';
+  document.getElementById('nav-admin-lista-empresas').style.display = 'none';
   document.getElementById('nav-gerente-equipe').style.display = 'none';
   document.getElementById('nav-operador-telemetria').style.display = 'none';
   document.getElementById('prof-group-empresa').style.display = 'block';
 
   if (role === 'admin') {
     document.getElementById('nav-admin-empresas').style.display = 'flex';
+    document.getElementById('nav-admin-lista-empresas').style.display = 'flex';
     document.getElementById('prof-group-empresa').style.display = 'none';
+    loadListaEmpresas();
   } else if (role === 'gerente') {
     document.getElementById('nav-gerente-equipe').style.display = 'flex';
     loadEquipeGerente();
@@ -872,6 +901,7 @@ async function saveNovaEmpresa() {
       document.getElementById('emp-nome').value = '';
       document.getElementById('emp-cnpj').value = '';
       loadDashStats();
+      loadListaEmpresas();
     } else {
       showError('emp-error', data.message || 'Erro ao registrar empresa.');
     }
@@ -879,6 +909,36 @@ async function saveNovaEmpresa() {
     showError('emp-error', 'Erro na conexão com o servidor da API.');
   } finally {
     setLoading('btn-save-empresa', false, 'Registrar Empresa');
+  }
+}
+
+/* ─── ADMIN: LISTAR EMPRESAS CADASTRADAS ─── */
+async function loadListaEmpresas() {
+  const tbody = document.getElementById('table-empresas-body');
+  try {
+    const r = await apiFetch('/empresas');
+    const resData = await r.json();
+    const empresas = Array.isArray(resData) ? resData : (resData.data || []);
+
+    if (r.ok && Array.isArray(empresas)) {
+      if (empresas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted);">Nenhuma empresa cadastrada ainda.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = empresas.map(e => `
+        <tr>
+          <td>${e.id}</td>
+          <td>${e.nome_comercial}</td>
+          <td>${e.cnpj}</td>
+          <td><code>${e.codigo_acesso || '—'}</code></td>
+          <td style="color:var(--muted2); font-size:0.78rem;">${e.data_adesao ? new Date(e.data_adesao).toLocaleString('pt-BR') : '—'}</td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">Erro ao carregar empresas.</td></tr>`;
+    }
+  } catch {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
   }
 }
 
@@ -1050,6 +1110,7 @@ function navTo(page, btn) {
     dash: ['Dashboard', 'Visão geral do sistema'], 
     chat: ['Chat com IA', 'Assistente Helios'],
     'admin-empresas': ['Cadastrar Empresa', 'Painel de expansão do Helios'],
+    'admin-lista-empresas': ['Empresas Cadastradas', 'Painel de gestão de parceiros'],
     'gerente-equipe': ['Equipe Vinculada', 'Usuários sob a sua empresa'],
     'operador-telemetria': ['Telemetria em Tempo Real', 'Leituras do banco técnico'],
     profile: ['Meu Perfil', 'Gerenciamento dos seus dados'] 
