@@ -31,8 +31,14 @@ class EmpresaController extends Controller {
             }
         }
         $data['data_adesao'] = $data['data_adesao'] ?? date('Y-m-d H:i:s');
+
+        if (empty($data['codigo_acesso'])) {
+            $data['codigo_acesso'] = $this->gerarCodigoAcesso();
+        }
+
         $id = $this->model->create($data);
-        $this->success(['id' => $id], 'Empresa criada');
+        $empresa = $this->model->find($id);
+        $this->success($empresa, 'Empresa criada');
     }
 
     /** PUT /empresas/{id} */
@@ -59,5 +65,13 @@ class EmpresaController extends Controller {
     /** GET /empresas/{id}/usuarios */
     public function usuarios(int $id): void {
         $this->success($this->model->usuarios($id));
+    }
+
+    /** Gera um código de acesso único (6 caracteres alfanuméricos) */
+    private function gerarCodigoAcesso(): string {
+        do {
+            $codigo = strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+        } while ($this->model->findByCodigo($codigo));
+        return $codigo;
     }
 }
