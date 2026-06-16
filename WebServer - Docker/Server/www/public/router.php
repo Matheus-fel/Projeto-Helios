@@ -3,7 +3,6 @@ ob_start();
  
 require_once __DIR__ . '/controllers/EmpresaController.php';
 require_once __DIR__ . '/controllers/UsuarioController.php';
-require_once __DIR__ . '/controllers/UsinaController.php';
 require_once __DIR__ . '/controllers/HistoricoChatController.php';
 require_once __DIR__ . '/controllers/ChatController.php';
  
@@ -51,8 +50,6 @@ try {
                     'POST' => $ctrl->store(),
                     default => jsonError('Método não permitido', 405),
                 };
-            } elseif ($subNum === 'usinas') {
-                $ctrl->usinas($id);
             } elseif ($subNum === 'usuarios') {
                 $ctrl->usuarios($id);
             } else {
@@ -95,28 +92,6 @@ try {
                 'DELETE' => $ctrl->destroy($id),
                 default  => jsonError('Método não permitido', 405),
             };
-            break;
- 
-        case 'usinas':
-            $ctrl = new UsinaController();
-            if ($id === null) {
-                match ($method) {
-                    'GET'  => $ctrl->index(),
-                    'POST' => $ctrl->store(),
-                    default => jsonError('Método não permitido', 405),
-                };
-            } elseif ($subNum === 'telemetria') {
-                if ($subAction === 'filtro')    $ctrl->telemetriaFiltrada($id);
-                elseif ($subAction === 'media') $ctrl->mediaHoraria($id);
-                else                            $ctrl->telemetria($id);
-            } else {
-                match ($method) {
-                    'GET'    => $ctrl->show($id),
-                    'PUT'    => $ctrl->update($id),
-                    'DELETE' => $ctrl->destroy($id),
-                    default  => jsonError('Método não permitido', 405),
-                };
-            }
             break;
  
         case 'historico':

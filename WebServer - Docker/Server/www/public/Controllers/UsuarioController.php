@@ -70,9 +70,17 @@ class UsuarioController extends Controller {
  
         // 3. Criação do usuário repassando o array com o empresa_id correto
         $id = $this->model->criar($data);
-        $usuario = $this->model->find($id);
-        unset($usuario['senha_hash']);
-        $this->success($usuario, 'Usuario criado', 201);
+        
+        // Retorno limpo e seguro: não faz buscas extras para não bater em queries antigas
+        $resposta = [
+            'id' => $id,
+            'nome' => $data['nome'],
+            'email' => $data['email'],
+            'nivel_acesso' => $data['nivel_acesso'],
+            'empresa_id' => $data['empresa_id']
+        ];
+        
+        $this->success($resposta, 'Usuario criado', 201);
     }
  
     public function update(int $id = 0): void {

@@ -57,11 +57,6 @@ class EmpresaController extends Controller {
             : $this->error('Empresa não encontrada', 404);
     }
 
-    /** GET /empresas/{id}/usinas */
-    public function usinas(int $id): void {
-        $this->success($this->model->usinas($id));
-    }
-
     /** GET /empresas/{id}/usuarios */
     public function usuarios(int $id): void {
         $this->success($this->model->usuarios($id));
