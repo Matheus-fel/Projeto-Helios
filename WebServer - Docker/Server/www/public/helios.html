@@ -584,6 +584,7 @@ body {
                 <th>Nome</th>
                 <th>E-mail</th>
                 <th>Nível de Acesso</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody id="table-equipe-body">
@@ -942,7 +943,7 @@ async function loadListaEmpresas() {
   }
 }
 
-/* ─── CÓDIGO CORRIGIDO: GESTOR LISTAR OPERADORES DA MESMA EMPRESA ─── */
+/* ─── CÓDIGO ALTERADO: GESTOR LISTAR E EXCLUIR OPERADORES DA MESMA EMPRESA ─── */
 async function loadEquipeGerente() {
   const tbody = document.getElementById('table-equipe-body');
   try {
@@ -956,7 +957,7 @@ async function loadEquipeGerente() {
       const equipe = resData.data.filter(u => u.empresa_id == currentUser.empresa_id && u.nivel_acesso !== 'admin');
       
       if(equipe.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--muted);">Nenhum colaborador vinculado a sua empresa ainda.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted);">Nenhum colaborador vinculado a sua empresa ainda.</td></tr>`;
         return;
       }
 
@@ -966,14 +967,17 @@ async function loadEquipeGerente() {
           <td>${u.nome}</td>
           <td>${u.email}</td>
           <td><span style="color:${u.nivel_acesso === 'gerente'?'var(--blue)':'var(--success)'}">${capitalize(u.nivel_acesso)}</span></td>
+          <td>
+            <button class="btn-main" style="margin-top:0; padding:.3rem .6rem; font-size:.75rem; background:var(--error); color:#fff;" onclick="excluirFuncionario(${u.id}, '${u.nome}')">Excluir</button>
+          </td>
         </tr>
       `).join('');
     } else {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--error);">Erro ao carregar dados da API.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">Erro ao carregar dados da API.</td></tr>`;
     }
   } catch (err) {
-    console.error("Erro no front-end:", err); // Boa prática para debugar no console
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
+    console.error("Erro no front-end:", err);  // Boa prática para debugar no console
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
   }
 }
 
@@ -1250,6 +1254,31 @@ function escHtml(s) {
 
 document.getElementById('login-senha').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 document.getElementById('reg-senha2').addEventListener('keydown', e => { if(e.key==='Enter') doRegister(); });
+
+/* Função para o Gestor excluir um funcionário da equipe */
+async function excluirFuncionario(id, nome) {
+  if (!confirm(`Tem certeza que deseja remover o funcionário ${nome}?`)) {
+    return;
+  }
+
+  try {
+    const r = await apiFetch(`/usuarios?id=${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ id: id }) // Enviando também no corpo por segurança, já que o back aceita ambos
+    });
+
+    const resData = await r.json();
+
+    if (r.ok) {
+      alert('Funcionário removido com sucesso!');
+      loadEquipeGerente(); // Recarrega a lista atualizada na tela
+    } else {
+      alert(resData.message || 'Erro ao remover funcionário.');
+    }
+  } catch (e) {
+    alert('Erro de comunicação com o servidor.');
+  }
+}
 </script>
 </body>
 </html>
