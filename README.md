@@ -10,7 +10,7 @@
 link para o [Diagrama de redes do docker](https://drive.google.com/file/d/1NvmEF4hLQMWwdvzO_TSISjyE5SM3O_3L/view?usp=sharing)
  
 ## Link para Download da Inteligencia Artificial
-[Helios-AI](https://huggingface.co/edmurk/Helios-AI)
+[Helios-AI](https://huggingface.co/Edmurk/Helios/tree/main)
 
 ## Redes Docker (Isolamento)
 
