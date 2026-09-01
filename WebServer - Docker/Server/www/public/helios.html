@@ -421,24 +421,9 @@ body {
         <input type="password" id="reg-senha2" placeholder="••••••••">
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Nível de Acesso</label>
-        <select id="reg-nivel" onchange="toggleChaveAdminField()">
-          <option value="">Selecione</option>
-          <option value="operador">Operador</option>
-          <option value="gerente">Gerente</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      <div class="form-group" id="group-empresa">
-        <label>Código de Acesso da Empresa</label>
-        <input type="text" id="reg-codigo-acesso" placeholder="Ex: ABC123">
-      </div>
-    </div>
-    <div class="form-group" id="group-chave-admin" style="display: none;">
-      <label style="color: var(--gold);">Chave Master (Apenas Admin)</label>
-      <input type="password" id="reg-chave-admin" placeholder="Digite a chave secreta de Admin">
+    <div class="form-group" id="group-empresa">
+      <label>Código de Acesso da Empresa</label>
+      <input type="text" id="reg-codigo-acesso" placeholder="Ex: ABC123">
     </div>
     <button class="btn-main" id="btn-register" onclick="doRegister()">Criar conta</button>
     <div class="auth-link">
@@ -741,22 +726,6 @@ function showSuccess(elId, msg) {
   }
 }
 
-function toggleChaveAdminField() {
-  const nivel = document.getElementById('reg-nivel').value;
-  const groupChave = document.getElementById('group-chave-admin');
-  const groupEmpresa = document.getElementById('group-empresa');
-
-  if (nivel === 'admin') {
-    groupChave.style.display = 'block';
-    groupEmpresa.style.display = 'none';
-    document.getElementById('reg-codigo-acesso').value = '';
-  } else {
-    groupChave.style.display = 'none';
-    groupEmpresa.style.display = 'block';
-    document.getElementById('reg-chave-admin').value = '';
-  }
-}
-
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value.trim();
@@ -788,16 +757,14 @@ async function doLogin() {
 }
 
 async function doRegister() {
-  const nome       = document.getElementById('reg-nome').value.trim();
-  const email      = document.getElementById('reg-email').value.trim();
-  const senha      = document.getElementById('reg-senha').value.trim();
-  const senha2     = document.getElementById('reg-senha2').value.trim();
+  const nome          = document.getElementById('reg-nome').value.trim();
+  const email         = document.getElementById('reg-email').value.trim();
+  const senha         = document.getElementById('reg-senha').value.trim();
+  const senha2        = document.getElementById('reg-senha2').value.trim();
   const codigo_acesso = document.getElementById('reg-codigo-acesso').value.trim();
-  const nivel_acesso = document.getElementById('reg-nivel').value;
-  const chave_admin = document.getElementById('reg-chave-admin').value.trim();
   hideError('reg-error');
 
-  if (!nome || !email || !senha || !nivel_acesso) {
+  if (!nome || !email || !senha || !codigo_acesso) {
     showError('reg-error', 'Preencha todos os campos obrigatórios.');
     return;
   }
@@ -805,24 +772,10 @@ async function doRegister() {
     showError('reg-error', 'As senhas não coincidem.');
     return;
   }
-  if (nivel_acesso === 'admin' && !chave_admin) {
-    showError('reg-error', 'A Chave Master é obrigatória para cadastro de administrador.');
-    return;
-  }
-  if ((nivel_acesso === 'gerente' || nivel_acesso === 'operador') && !codigo_acesso) {
-    showError('reg-error', 'O Código de Acesso da Empresa é obrigatório para Gestores e Operadores.');
-    return;
-  }
 
   setLoading('btn-register', true, 'Criar conta');
   try {
-    const body = { nome, email, senha, nivel_acesso };
-
-    if (nivel_acesso === 'admin') {
-      body.chave_admin = chave_admin;
-    } else {
-      body.codigo_acesso = codigo_acesso;
-    }
+    const body = { nome, email, senha, codigo_acesso };
 
     const r = await apiFetch('/usuarios', {
       method: 'POST',

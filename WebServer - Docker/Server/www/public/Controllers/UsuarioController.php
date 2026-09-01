@@ -5,9 +5,6 @@ require_once __DIR__ . '/../models/UsuarioModel.php';
  
 class UsuarioController extends Controller {
     private UsuarioModel $model;
-
-    /** Chave master fixa exigida para cadastro de administradores. Troque por uma chave forte/secreta. */
-    private const ADMIN_MASTER_KEY = 'h7lio_adm';
  
     public function __construct() {
         $this->model = new UsuarioModel();
@@ -28,59 +25,46 @@ class UsuarioController extends Controller {
  
     public function store(): void {
         $data = $this->body();
- 
-        // Validação dos campos obrigatórios globais
-        foreach (['nome', 'email', 'senha', 'nivel_acesso'] as $f) {
-            if (empty($data[$f])) $this->error("Campo obrigatorio: $f", 422);
+
+        // Validação dos campos obrigatórios
+        foreach (['nome', 'email', 'senha', 'codigo_acesso'] as $f) {
+            if (empty($data[$f])) {
+                $this->error("Campo obrigatório: $f", 422);
+            }
         }
- 
+
         if ($this->model->findByEmail($data['email'])) {
-            $this->error('E-mail ja cadastrado', 409);
+            $this->error('E-mail já cadastrado', 409);
         }
- 
-        // Validação do código de vinculação da empresa
-        if ($data['nivel_acesso'] === 'admin') {
-            // Cadastro de admin exige chave master fixa (definida no topo desta classe)
-            if (empty($data['chave_admin']) || !hash_equals(self::ADMIN_MASTER_KEY, (string) $data['chave_admin'])) {
-                $this->error('Chave master invalida para cadastro de administrador.', 403);
-            }
 
-            $data['empresa_id'] = null;
-        } else {
-            // Gestores e Operadores PRECISAM fornecer o código de uma empresa ativa
-            if (empty($data['codigo_acesso'])) {
-                $this->error('Codigo de acesso da empresa e obrigatorio para este nivel.', 422);
-            }
+        // Valida o código da empresa
+        require_once __DIR__ . '/../models/EmpresaModel.php';
+        $empresaModel = new EmpresaModel();
+        $empresa = $empresaModel->findByCodigo(trim($data['codigo_acesso']));
 
-            // Instancia o EmpresaModel pra validar o código de convite
-            require_once __DIR__ . '/../models/EmpresaModel.php';
-            $empresaModel = new EmpresaModel();
-            $empresa = $empresaModel->findByCodigo(trim($data['codigo_acesso']));
-
-            if (!$empresa) {
-                $this->error('Codigo de acesso invalido. Empresa nao encontrada.', 404);
-            }
-
-            // Amarra o ID da empresa encontrada no payload do novo usuário
-            $data['empresa_id'] = (int) $empresa['id'];
+        if (!$empresa) {
+            $this->error('Código de acesso inválido. Empresa não encontrada.', 404);
         }
- 
-        // Remove campos auxiliares pra que não tentem ser inseridos na tabela usuarios
-        unset($data['codigo_acesso'], $data['chave_admin']);
- 
-        // 3. Criação do usuário repassando o array com o empresa_id correto
+
+        // Define o nível de acesso fixo como operador e associa a empresa
+        $data['nivel_acesso'] = 'operador';
+        $data['empresa_id']   = (int) $empresa['id'];
+
+        // Remove campo auxiliar que não pertence à tabela do banco
+        unset($data['codigo_acesso']);
+
+        // Criação do usuário
         $id = $this->model->criar($data);
         
-        // Retorno limpo e seguro: não faz buscas extras para não bater em queries antigas
         $resposta = [
-            'id' => $id,
-            'nome' => $data['nome'],
-            'email' => $data['email'],
+            'id'           => $id,
+            'nome'         => $data['nome'],
+            'email'        => $data['email'],
             'nivel_acesso' => $data['nivel_acesso'],
-            'empresa_id' => $data['empresa_id']
+            'empresa_id'   => $data['empresa_id']
         ];
         
-        $this->success($resposta, 'Usuario criado', 201);
+        $this->success($resposta, 'Usuário criado com sucesso', 201);
     }
  
     public function update(int $id = 0): void {
