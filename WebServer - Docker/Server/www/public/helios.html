@@ -472,6 +472,10 @@ body {
         <span class="nav-icon">👥</span> Equipe da Empresa
       </button>
 
+      <button class="nav-btn" onclick="navTo('historico', this)">
+        <span class="nav-icon">🕘</span> Histórico
+      </button>
+
       <button class="nav-btn" onclick="navTo('profile', this)">
         <span class="nav-icon">👤</span> Meu Perfil
       </button>
@@ -620,6 +624,31 @@ body {
           <button class="btn-send" onclick="sendChat()">➤</button>
         </div>
         <div class="chat-hint">Pressione Enter para enviar · Shift+Enter para nova linha</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-historico">
+      <div class="dash-content">
+        <h2 style="font-family:'Syne',sans-serif; color:var(--gold);">Histórico de Conversas</h2>
+        <p style="font-size:0.83rem; color:var(--muted2); margin-bottom:1rem;">Últimas interações registradas com a Helios IA.</p>
+        <div style="overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;">
+          <table class="helios-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Pergunta</th>
+                <th>Resposta</th>
+                <th>Normas</th>
+                <th>Data</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="table-historico-body">
+              <tr><td colspan="7" style="text-align:center; color:var(--muted);">Carregando histórico...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -956,6 +985,64 @@ async function loadEquipeGerente() {
   }
 }
 
+/* ─── HISTÓRICO DE CHAT: LISTAR E EXCLUIR INTERAÇÕES ─── */
+function truncar(texto, max = 80) {
+  if (!texto) return '—';
+  const t = String(texto);
+  return t.length > max ? t.slice(0, max) + '…' : t;
+}
+
+async function loadHistorico() {
+  const tbody = document.getElementById('table-historico-body');
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted);">Carregando histórico...</td></tr>`;
+  try {
+    const r = await apiFetch('/historico?limit=20');
+    const resData = await r.json();
+    const itens = Array.isArray(resData) ? resData : (resData.data || []);
+
+    if (r.ok && Array.isArray(itens)) {
+      if (itens.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted);">Nenhuma interação registrada ainda.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = itens.map(h => `
+        <tr>
+          <td>${h.id}</td>
+          <td>${escHtml(h.nome_usuario || '—')}</td>
+          <td title="${escHtml(h.pergunta_tecnica || '')}">${escHtml(truncar(h.pergunta_tecnica))}</td>
+          <td title="${escHtml(h.resposta_ia || '')}">${escHtml(truncar(h.resposta_ia))}</td>
+          <td>${escHtml(truncar(h.normas_relacionadas, 40))}</td>
+          <td style="color:var(--muted2); font-size:.78rem;">${h.data_interacao ? new Date(h.data_interacao).toLocaleString('pt-BR') : '—'}</td>
+          <td>
+            <button class="btn-main" style="margin-top:0; padding:.3rem .6rem; font-size:.75rem; background:var(--error); color:#fff;" onclick="excluirHistorico(${h.id})">Excluir</button>
+          </td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--error);">Erro ao carregar histórico.</td></tr>`;
+    }
+  } catch (e) {
+    console.error('Erro ao carregar histórico:', e);
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
+  }
+}
+
+async function excluirHistorico(id) {
+  if (!confirm('Tem certeza que deseja remover este registro do histórico?')) return;
+
+  try {
+    const r = await apiFetch(`/historico/${id}`, { method: 'DELETE' });
+    const resData = await r.json();
+    if (r.ok) {
+      loadHistorico();
+    } else {
+      alert(resData.message || 'Erro ao remover registro.');
+    }
+  } catch (e) {
+    alert('Erro de comunicação com o servidor.');
+  }
+}
+
 function toggleEditProfile() {
   isEditingProfile = !isEditingProfile;
   const inputs = ['prof-nome', 'prof-email'];
@@ -1062,10 +1149,13 @@ function navTo(page, btn) {
     'admin-empresas': ['Cadastrar Empresa', 'Painel de expansão do Helios'],
     'admin-lista-empresas': ['Empresas Cadastradas', 'Painel de gestão de parceiros'],
     'gerente-equipe': ['Equipe Vinculada', 'Usuários sob a sua empresa'],
+    historico: ['Histórico de Conversas', 'Registro de interações com a IA'],
     profile: ['Meu Perfil', 'Gerenciamento dos seus dados'] 
   };
   document.getElementById('topbar-title').textContent = titles[page][0];
   document.getElementById('topbar-sub').textContent = titles[page][1];
+
+  if (page === 'historico') loadHistorico();
 }
 
 function navToChat() {
