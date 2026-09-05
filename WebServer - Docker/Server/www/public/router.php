@@ -5,6 +5,7 @@ require_once __DIR__ . '/controllers/EmpresaController.php';
 require_once __DIR__ . '/controllers/UsuarioController.php';
 require_once __DIR__ . '/controllers/HistoricoChatController.php';
 require_once __DIR__ . '/controllers/ChatController.php';
+require_once __DIR__ . '/controllers/ConversaController.php';
  
 // ── CORS ───────────────────────────────────────────────────────────────────
 header('Access-Control-Allow-Origin: *');
@@ -18,6 +19,20 @@ function jsonError(string $msg, int $code = 404): void {
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['success' => false, 'message' => $msg]);
     exit;
+}
+
+// ── Conexão com o banco (usada pelo ChatController e ConversaController) ───
+function getPdo(): PDO {
+    static $pdo = null;
+    if ($pdo === null) {
+        $pdo = new PDO(
+            'mysql:host=mysql;port=3306;dbname=db_helios;charset=utf8mb4',
+            'root',
+            'root',
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
+    }
+    return $pdo;
 }
  
 // ── Parse da URI ───────────────────────────────────────────────────────────
@@ -39,7 +54,28 @@ try {
  
         case 'chat':
             if ($method !== 'POST') jsonError('Método não permitido', 405);
-            (new ChatController())->chat();
+            (new ChatController(getPdo()))->chat();
+            break;
+
+        case 'conversas':
+            $ctrl = new ConversaController(getPdo());
+
+            if ($id === null) {
+                match ($method) {
+                    'GET'   => $ctrl->index(),
+                    default => jsonError('Método não permitido', 405),
+                };
+            } elseif ($subNum === 'mensagens') {
+                match ($method) {
+                    'GET'   => $ctrl->mensagens($id),
+                    default => jsonError('Método não permitido', 405),
+                };
+            } else {
+                match ($method) {
+                    'DELETE' => $ctrl->destroy($id),
+                    default  => jsonError('Método não permitido', 405),
+                };
+            }
             break;
  
         case 'empresas':
