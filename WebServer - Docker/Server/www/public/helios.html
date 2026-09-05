@@ -227,6 +227,27 @@ body {
 }
 .page { display: none; flex: 1; overflow: hidden; flex-direction: column; }
 .page.active { display: flex; }
+.conv-list {
+  display: flex; flex-direction: column; padding: 0 .75rem .5rem; gap: 2px;
+  flex: 1; min-height: 0; overflow-y: auto;
+}
+.conv-item {
+  display: flex; align-items: center; justify-content: space-between; gap: .4rem;
+  padding: .5rem .6rem; border-radius: 8px;
+  font-size: .78rem; color: var(--muted2);
+  cursor: pointer; transition: background .15s, color .15s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.conv-item:hover { background: var(--surface2); color: var(--text); }
+.conv-item.active { background: var(--gold-dim); color: var(--gold); border: 1px solid #f5a62322; }
+.conv-item .conv-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.conv-item .conv-del {
+  opacity: 0; background: none; border: none; color: var(--muted); cursor: pointer; font-size: .8rem;
+  flex-shrink: 0;
+}
+.conv-item:hover .conv-del { opacity: 1; }
+.conv-item .conv-del:hover { color: var(--error); }
+.conv-empty { padding: .5rem .75rem; font-size: .76rem; color: var(--muted); }
 .chat-messages {
   flex: 1; overflow-y: auto; padding: 1.5rem;
   display: flex; flex-direction: column; gap: 1rem;
@@ -446,6 +467,10 @@ body {
       <button class="nav-btn" onclick="navTo('chat', this)">
         <span class="nav-icon">💬</span> Chat com IA
       </button>
+
+      <button class="nav-btn" onclick="navTo('profile', this)">
+        <span class="nav-icon">👤</span> Meu Perfil
+      </button>
       
       <button class="nav-btn" id="nav-admin-empresas" onclick="navTo('admin-empresas', this)" style="display: none;">
         <span class="nav-icon">🏢</span> Cadastrar Empresa
@@ -456,15 +481,16 @@ body {
       <button class="nav-btn" id="nav-gerente-equipe" onclick="navTo('gerente-equipe', this)" style="display: none;">
         <span class="nav-icon">👥</span> Equipe da Empresa
       </button>
-
-      <button class="nav-btn" onclick="navTo('historico', this)">
-        <span class="nav-icon">🕘</span> Histórico
-      </button>
-
-      <button class="nav-btn" onclick="navTo('profile', this)">
-        <span class="nav-icon">👤</span> Meu Perfil
-      </button>
     </div>
+
+    <div class="nav-label" style="padding: .5rem .75rem .3rem; display:flex; align-items:center; justify-content:space-between;">
+      <span>Conversas</span>
+      <button onclick="novaConversa()" title="Nova conversa" style="background:none; border:none; color:var(--gold); cursor:pointer; font-size:.85rem;">+</button>
+    </div>
+    <div id="convList" class="conv-list">
+      <div class="conv-empty">Carregando...</div>
+    </div>
+
     <div class="sidebar-footer">
       <div class="user-avatar" id="sidebar-avatar">JS</div>
       <div class="user-info">
@@ -582,57 +608,37 @@ body {
     </div>
 
     <div class="page" id="page-chat">
-      <div class="chat-messages" id="chatMessages">
-        <div class="msg-row">
-          <div class="msg-avatar ia">☀</div>
-          <div>
-            <div class="msg-bubble">
-              Olá! Sou a <strong>Helios IA</strong>, sua assistente especializada em energia solar e gestão de usinas. Como posso te ajudar hoje?
+      <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="padding: .75rem 1.5rem 0; display:flex; justify-content:flex-end;">
+          <button class="btn-secondary" style="width:auto; padding:.4rem .9rem; font-size:.78rem;" onclick="novaConversa()">+ Nova conversa</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg-row">
+            <div class="msg-avatar ia">☀</div>
+            <div>
+              <div class="msg-bubble">
+                Olá! Sou a <strong>Helios IA</strong>, sua assistente especializada em energia solar e gestão de usinas. Como posso te ajudar hoje?
+              </div>
+              <div class="msg-time">agora</div>
             </div>
-            <div class="msg-time">agora</div>
           </div>
         </div>
-      </div>
-      <div style="padding: 0 1.5rem .75rem">
-        <div class="suggestions" id="suggestions">
-          <button class="suggestion-btn" onclick="useSuggestion(this)">Como melhorar eficiência de painéis?</button>
-          <button class="suggestion-btn" onclick="useSuggestion(this)">Normas ABNT para instalações solares</button>
-          <button class="suggestion-btn" onclick="useSuggestion(this)">Calcular capacidade de geração</button>
-          <button class="suggestion-btn" onclick="useSuggestion(this)">Manutenção preventiva de inversores</button>
-        </div>
-      </div>
-      <div class="chat-input-area">
-        <div class="chat-input-row">
-          <div class="chat-input-wrap">
-            <textarea id="chatInput" rows="1" placeholder="Pergunte algo sobre energia solar, usinas, normas técnicas…" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+        <div style="padding: 0 1.5rem .75rem">
+          <div class="suggestions" id="suggestions">
+            <button class="suggestion-btn" onclick="useSuggestion(this)">Como melhorar eficiência de painéis?</button>
+            <button class="suggestion-btn" onclick="useSuggestion(this)">Normas ABNT para instalações solares</button>
+            <button class="suggestion-btn" onclick="useSuggestion(this)">Calcular capacidade de geração</button>
+            <button class="suggestion-btn" onclick="useSuggestion(this)">Manutenção preventiva de inversores</button>
           </div>
-          <button class="btn-send" onclick="sendChat()">➤</button>
         </div>
-        <div class="chat-hint">Pressione Enter para enviar · Shift+Enter para nova linha</div>
-      </div>
-    </div>
-
-    <div class="page" id="page-historico">
-      <div class="dash-content">
-        <h2 style="font-family:'Syne',sans-serif; color:var(--gold);">Histórico de Conversas</h2>
-        <p style="font-size:0.83rem; color:var(--muted2); margin-bottom:1rem;">Últimas interações registradas com a Helios IA.</p>
-        <div style="overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;">
-          <table class="helios-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Usuário</th>
-                <th>Pergunta</th>
-                <th>Resposta</th>
-                <th>Normas</th>
-                <th>Data</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody id="table-historico-body">
-              <tr><td colspan="7" style="text-align:center; color:var(--muted);">Carregando histórico...</td></tr>
-            </tbody>
-          </table>
+        <div class="chat-input-area">
+          <div class="chat-input-row">
+            <div class="chat-input-wrap">
+              <textarea id="chatInput" rows="1" placeholder="Pergunte algo sobre energia solar, usinas, normas técnicas…" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+            </div>
+            <button class="btn-send" onclick="sendChat()">➤</button>
+          </div>
+          <div class="chat-hint">Pressione Enter para enviar · Shift+Enter para nova linha</div>
         </div>
       </div>
     </div>
@@ -682,6 +688,7 @@ body {
 const BASE = 'http://localhost:8050';
 let currentUser = null;
 let isEditingProfile = false;
+let currentConversaId = null; // conversa ativa no chat (null = ainda não começou / nova conversa)
 
 function apiFetch(path, options = {}) {
   return fetch(BASE + path, {
@@ -804,6 +811,8 @@ function enterApp(user) {
   document.getElementById('sidebar-name').textContent = nome;
   document.getElementById('sidebar-role').textContent = capitalize(role === 'gerente' ? 'Gestor' : role);
   document.getElementById('welcome-title').textContent = `Olá, ${nome.split(' ')[0]}!`;
+
+  carregarListaConversas();
 
   document.getElementById('prof-nivel').value = role;
   document.getElementById('prof-nome').value = user.nome || '';
@@ -945,57 +954,6 @@ function truncar(texto, max = 80) {
   return t.length > max ? t.slice(0, max) + '…' : t;
 }
 
-async function loadHistorico() {
-  const tbody = document.getElementById('table-historico-body');
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted);">Carregando histórico...</td></tr>`;
-  try {
-    const r = await apiFetch('/historico?limit=20');
-    const resData = await r.json();
-    const itens = Array.isArray(resData) ? resData : (resData.data || []);
-
-    if (r.ok && Array.isArray(itens)) {
-      if (itens.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted);">Nenhuma interação registrada ainda.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = itens.map(h => `
-        <tr>
-          <td>${h.id}</td>
-          <td>${escHtml(h.nome_usuario || '—')}</td>
-          <td title="${escHtml(h.pergunta_tecnica || '')}">${escHtml(truncar(h.pergunta_tecnica))}</td>
-          <td title="${escHtml(h.resposta_ia || '')}">${escHtml(truncar(h.resposta_ia))}</td>
-          <td>${escHtml(truncar(h.normas_relacionadas, 40))}</td>
-          <td style="color:var(--muted2); font-size:.78rem;">${h.data_interacao ? new Date(h.data_interacao).toLocaleString('pt-BR') : '—'}</td>
-          <td>
-            <button class="btn-main" style="margin-top:0; padding:.3rem .6rem; font-size:.75rem; background:var(--error); color:#fff;" onclick="excluirHistorico(${h.id})">Excluir</button>
-          </td>
-        </tr>
-      `).join('');
-    } else {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--error);">Erro ao carregar histórico.</td></tr>`;
-    }
-  } catch (e) {
-    console.error('Erro ao carregar histórico:', e);
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
-  }
-}
-
-async function excluirHistorico(id) {
-  if (!confirm('Tem certeza que deseja remover este registro do histórico?')) return;
-
-  try {
-    const r = await apiFetch(`/historico/${id}`, { method: 'DELETE' });
-    const resData = await r.json();
-    if (r.ok) {
-      loadHistorico();
-    } else {
-      alert(resData.message || 'Erro ao remover registro.');
-    }
-  } catch (e) {
-    alert('Erro de comunicação com o servidor.');
-  }
-}
-
 function toggleEditProfile() {
   isEditingProfile = !isEditingProfile;
   const inputs = ['prof-nome', 'prof-email'];
@@ -1078,7 +1036,9 @@ async function saveProfileChanges() {
 
 function doLogout() {
   currentUser = null;
+  currentConversaId = null;
   showScreen('login-screen');
+  document.getElementById('convList').innerHTML = '<div class="conv-empty">Carregando...</div>';
   document.getElementById('chatMessages').innerHTML = `
     <div class="msg-row">
       <div class="msg-avatar ia">☀</div>
@@ -1088,6 +1048,101 @@ function doLogout() {
       </div>
     </div>`;
   document.getElementById('suggestions').style.display = 'flex';
+}
+
+function novaConversa() {
+  currentConversaId = null;
+
+  const btnChat = document.querySelectorAll('.nav-btn')[1];
+  navTo('chat', btnChat);
+
+  document.getElementById('chatMessages').innerHTML = `
+    <div class="msg-row">
+      <div class="msg-avatar ia">☀</div>
+      <div>
+        <div class="msg-bubble">Olá! Sou a <strong>Helios IA</strong>, sua assistente especializada em energia solar e gestão de usinas. Como posso te ajudar hoje?</div>
+        <div class="msg-time">agora</div>
+      </div>
+    </div>`;
+  document.getElementById('suggestions').style.display = 'flex';
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('chatInput').focus();
+}
+
+async function carregarListaConversas() {
+  const usuario_id = currentUser?.id || currentUser?.usuario_id;
+  const list = document.getElementById('convList');
+  if (!usuario_id) { list.innerHTML = '<div class="conv-empty">Faça login para ver suas conversas.</div>'; return; }
+
+  try {
+    const r = await apiFetch(`/conversas?usuario_id=${usuario_id}`);
+    const data = await r.json();
+    const conversas = data.data || [];
+
+    if (!conversas.length) {
+      list.innerHTML = '<div class="conv-empty">Nenhuma conversa ainda.</div>';
+      return;
+    }
+
+    list.innerHTML = conversas.map(c => `
+      <div class="conv-item ${c.id === currentConversaId ? 'active' : ''}" data-id="${c.id}" onclick="abrirConversa(${c.id})">
+        <span class="conv-title">${escHtml(c.titulo || 'Conversa sem título')}</span>
+        <button class="conv-del" onclick="event.stopPropagation(); apagarConversa(${c.id})" title="Excluir">✕</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="conv-empty">Erro ao carregar conversas.</div>';
+  }
+}
+
+async function abrirConversa(conversaId) {
+  currentConversaId = conversaId;
+
+  const btnChat = document.querySelectorAll('.nav-btn')[1];
+  navTo('chat', btnChat);
+
+  document.querySelectorAll('.conv-item').forEach(el => {
+    el.classList.toggle('active', Number(el.dataset.id) === conversaId);
+  });
+
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML = '<div class="conv-empty">Carregando mensagens...</div>';
+  document.getElementById('suggestions').style.display = 'none';
+
+  try {
+    const r = await apiFetch(`/conversas/${conversaId}/mensagens`);
+    const data = await r.json();
+
+    if (!r.ok) {
+      msgs.innerHTML = `<div class="conv-empty">Erro ao carregar: ${escHtml(data.message || 'falha na API')}</div>`;
+      return;
+    }
+
+    const rows = data.data || [];
+
+    msgs.innerHTML = '';
+    if (!rows.length) {
+      msgs.innerHTML = '<div class="conv-empty">Essa conversa ainda não tem mensagens.</div>';
+    }
+    rows.forEach(row => {
+      appendMsg('user', row.pergunta_tecnica);
+      appendMsg('ia', row.resposta_ia);
+    });
+  } catch (e) {
+    msgs.innerHTML = '<div class="conv-empty">Erro ao carregar mensagens.</div>';
+  }
+}
+
+async function apagarConversa(conversaId) {
+  if (!confirm('Excluir essa conversa e todo o histórico dela?')) return;
+
+  try {
+    await apiFetch(`/conversas/${conversaId}`, { method: 'DELETE' });
+    if (currentConversaId === conversaId) novaConversa();
+    carregarListaConversas();
+  } catch (e) {
+    alert('Erro ao excluir conversa.');
+  }
 }
 
 function navTo(page, btn) {
@@ -1102,18 +1157,18 @@ function navTo(page, btn) {
     'admin-empresas': ['Cadastrar Empresa', 'Painel de expansão do Helios'],
     'admin-lista-empresas': ['Empresas Cadastradas', 'Painel de gestão de parceiros'],
     'gerente-equipe': ['Equipe Vinculada', 'Usuários sob a sua empresa'],
-    historico: ['Histórico de Conversas', 'Registro de interações com a IA'],
     profile: ['Meu Perfil', 'Gerenciamento dos seus dados'] 
   };
   document.getElementById('topbar-title').textContent = titles[page][0];
   document.getElementById('topbar-sub').textContent = titles[page][1];
 
-  if (page === 'historico') loadHistorico();
+  if (page === 'chat') carregarListaConversas();
 }
 
 function navToChat() {
   const btnChat = document.querySelectorAll('.nav-btn')[1];
   navTo('chat', btnChat);
+  carregarListaConversas();
   document.getElementById('chatInput').focus();
 }
 
@@ -1223,12 +1278,19 @@ async function sendChat() {
   try {
     const resp = await apiFetch('/chat', {
       method: 'POST',
-      body: JSON.stringify({ pergunta: text })
+      body: JSON.stringify({
+        pergunta: text,
+        usuario_id: currentUser?.id || currentUser?.usuario_id || null,
+        conversa_id: currentConversaId
+      })
     });
     removeTyping();
     if (resp.ok) {
       const data = await resp.json();
+      const isNova = !currentConversaId && data.conversa_id;
+      if (data.conversa_id) currentConversaId = data.conversa_id;
       appendMsg('ia', data.resposta || 'Sem resposta.');
+      if (isNova) carregarListaConversas();
     } else {
       const err = await resp.json().catch(() => ({}));
       appendMsg('ia', err.message || 'Não consegui processar sua mensagem. Tente novamente.');
