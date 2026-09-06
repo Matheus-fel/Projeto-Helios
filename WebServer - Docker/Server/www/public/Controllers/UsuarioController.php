@@ -91,6 +91,19 @@ class UsuarioController extends Controller {
  
         unset($data['id'], $data['usuario_id'], $data['senha_hash']);
         
+        // Validação do Nível de Acesso
+        if (isset($data['nivel_acesso'])) {
+            $niveisValidos = ['operador', 'gerente', 'admin'];
+            if (!in_array($data['nivel_acesso'], $niveisValidos, true)) {
+                $this->error('Nível de acesso inválido. Escolha entre: operador, gerente ou admin.', 422);
+            }
+
+            // Se for promovido a admin, ajusta empresa_id se necessário
+            if ($data['nivel_acesso'] === 'admin' && array_key_exists('empresa_id', $data) && empty($data['empresa_id'])) {
+                $data['empresa_id'] = null;
+            }
+        }
+
         if (isset($data['senha'])) {
             $data['senha_hash'] = password_hash($data['senha'], PASSWORD_BCRYPT);
             unset($data['senha']);
