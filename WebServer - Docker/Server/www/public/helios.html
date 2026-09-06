@@ -853,14 +853,17 @@ function enterApp(user) {
   // ─── LIBERAÇÃO E CARREGAMENTO DE TELAS BASEADO NO PERFIL ───
   document.getElementById('nav-admin-empresas').style.display = 'none';
   document.getElementById('nav-admin-lista-empresas').style.display = 'none';
+  document.getElementById('nav-admin-usuarios').style.display = 'none'; // ◄ NOVA LINHA
   document.getElementById('nav-gerente-equipe').style.display = 'none';
   document.getElementById('prof-group-empresa').style.display = 'block';
 
   if (role === 'admin') {
     document.getElementById('nav-admin-empresas').style.display = 'flex';
     document.getElementById('nav-admin-lista-empresas').style.display = 'flex';
+    document.getElementById('nav-admin-usuarios').style.display = 'flex'; // ◄ NOVA LINHA
     document.getElementById('prof-group-empresa').style.display = 'none';
     loadListaEmpresas();
+    loadUsuariosAdmin(); // ◄ NOVA LINHA
   } else if (role === 'gerente') {
     document.getElementById('nav-gerente-equipe').style.display = 'flex';
     loadEquipeGerente();
@@ -934,6 +937,84 @@ async function loadListaEmpresas() {
     }
   } catch {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
+  }
+}
+
+/* ─── ADMIN: GESTÃO DE USUÁRIOS E PERFIS ─── */
+async function loadUsuariosAdmin() {
+  const tbody = document.getElementById('table-admin-usuarios-body');
+  if (!tbody) return;
+
+  try {
+    const r = await apiFetch('/usuarios');
+    const resData = await r.json();
+    const usuarios = Array.isArray(resData) ? resData : (resData.data || []);
+
+    if (r.ok && Array.isArray(usuarios)) {
+      if (usuarios.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--muted);">Nenhum usuário cadastrado.</td></tr>`;
+        return;
+      }
+
+      const currentUserId = currentUser?.id || currentUser?.usuario_id;
+
+      tbody.innerHTML = usuarios.map(u => {
+        const isSelf = u.id === currentUserId;
+        return `
+          <tr>
+            <td>${u.id}</td>
+            <td>${escHtml(u.nome)} ${isSelf ? '<span style="color:var(--gold); font-size:.75rem;">(Você)</span>' : ''}</td>
+            <td>${escHtml(u.email)}</td>
+            <td>${u.empresa_id ? u.empresa_id : '<span style="color:var(--muted);">Global (Admin)</span>'}</td>
+            <td>
+              <select id="select-role-${u.id}" style="padding:.3rem .5rem; font-size:.8rem; width:auto;" ${isSelf ? 'disabled' : ''}>
+                <option value="operador" ${u.nivel_acesso === 'operador' ? 'selected' : ''}>Operador</option>
+                <option value="gerente" ${u.nivel_acesso === 'gerente' ? 'selected' : ''}>Gerente</option>
+                <option value="admin" ${u.nivel_acesso === 'admin' ? 'selected' : ''}>Admin</option>
+              </select>
+            </td>
+            <td>
+              ${isSelf ? '<span style="color:var(--muted); font-size:.78rem;">Sem alterações</span>' : `
+                <button class="btn-main" style="margin-top:0; padding:.3rem .7rem; font-size:.75rem; width:auto;" onclick="alterarNivelUsuario(${u.id})">Salvar Cargo</button>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } else {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--error);">Erro ao carregar usuários.</td></tr>`;
+    }
+  } catch {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
+  }
+}
+
+async function alterarNivelUsuario(userId) {
+  hideError('admin-user-error');
+  const select = document.getElementById(`select-role-${userId}`);
+  if (!select) return;
+
+  const novoNivel = select.value;
+
+  try {
+    const r = await apiFetch('/usuarios', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: userId,
+        nivel_acesso: novoNivel
+      })
+    });
+
+    const resData = await r.json();
+
+    if (r.ok) {
+      showSuccess('admin-user-success', 'Nível de acesso alterado com sucesso!');
+      loadUsuariosAdmin();
+    } else {
+      showError('admin-user-error', resData.message || 'Erro ao alterar nível de acesso.');
+    }
+  } catch {
+    showError('admin-user-error', 'Erro de comunicação com o servidor.');
   }
 }
 
@@ -1187,6 +1268,7 @@ function navTo(page, btn) {
     chat: ['Chat com IA', 'Assistente Helios'],
     'admin-empresas': ['Cadastrar Empresa', 'Painel de expansão do Helios'],
     'admin-lista-empresas': ['Empresas Cadastradas', 'Painel de gestão de parceiros'],
+    'admin-usuarios': ['Gestão de Usuários', 'Controle de privilégios e papéis'], // ◄ NOVO TÍTULO
     'gerente-equipe': ['Equipe Vinculada', 'Usuários sob a sua empresa'],
     profile: ['Meu Perfil', 'Gerenciamento dos seus dados'] 
   };
@@ -1194,6 +1276,7 @@ function navTo(page, btn) {
   document.getElementById('topbar-sub').textContent = titles[page][1];
 
   if (page === 'chat') carregarListaConversas();
+  if (page === 'admin-usuarios') loadUsuariosAdmin(); // ◄ NOVA LINHA
 }
 
 function navToChat() {
