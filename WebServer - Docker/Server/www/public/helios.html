@@ -478,6 +478,9 @@ body {
       <button class="nav-btn" id="nav-admin-lista-empresas" onclick="navTo('admin-lista-empresas', this)" style="display: none;">
         <span class="nav-icon">📋</span> Empresas Cadastradas
       </button>
+      <button class="nav-btn" id="nav-admin-usuarios" onclick="navTo('admin-usuarios', this)" style="display: none;">
+        <span class="nav-icon">🔑</span> Gestão de Usuários
+      </button>
       <button class="nav-btn" id="nav-gerente-equipe" onclick="navTo('gerente-equipe', this)" style="display: none;">
         <span class="nav-icon">👥</span> Equipe da Empresa
       </button>
@@ -578,6 +581,34 @@ body {
             </thead>
             <tbody id="table-empresas-body">
               <tr><td colspan="5" style="text-align:center; color:var(--muted);">Carregando empresas...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-admin-usuarios">
+      <div class="dash-content">
+        <h2 style="font-family:'Syne',sans-serif; color:var(--gold);">Gestão de Usuários & Perfis (RBAC)</h2>
+        <p style="font-size:0.83rem; color:var(--muted2); margin-bottom:1rem;">Gerencie e altere os níveis de acesso de todos os usuários do ecossistema Helios.</p>
+
+        <div class="error-msg" id="admin-user-error"></div>
+        <div class="success-msg" id="admin-user-success"></div>
+
+        <div style="overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;">
+          <table class="helios-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Empresa ID</th>
+                <th>Nível de Acesso</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="table-admin-usuarios-body">
+              <tr><td colspan="6" style="text-align:center; color:var(--muted);">Carregando usuários...</td></tr>
             </tbody>
           </table>
         </div>
