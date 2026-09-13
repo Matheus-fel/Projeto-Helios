@@ -83,17 +83,15 @@ try {
             if ($id === null) {
                 match ($method) {
                     'GET'  => $ctrl->index(),
-                    'POST' => $ctrl->store(),
+                    'POST' => (function() use ($ctrl) {
+                        // Trava de segurança no backend
+                        $role = $_SERVER['HTTP_X_USER_ROLE'] ?? $_POST['solicitante_role'] ?? null;
+                        if ($role !== 'admin') {
+                            jsonError('Acesso negado. Apenas administradores podem cadastrar empresas.', 403);
+                        }
+                        $ctrl->store();
+                    })(),
                     default => jsonError('Método não permitido', 405),
-                };
-            } elseif ($subNum === 'usuarios') {
-                $ctrl->usuarios($id);
-            } else {
-                match ($method) {
-                    'GET'    => $ctrl->show($id),
-                    'PUT'    => $ctrl->update($id),
-                    'DELETE' => $ctrl->destroy($id),
-                    default  => jsonError('Método não permitido', 405),
                 };
             }
             break;
