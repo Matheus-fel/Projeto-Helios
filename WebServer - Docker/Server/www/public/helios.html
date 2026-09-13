@@ -1258,8 +1258,24 @@ async function apagarConversa(conversaId) {
 }
 
 function navTo(page, btn) {
+  // TRAVA DE NAVEGAÇÃO
+  const role = currentUser?.nivel_acesso || 'operador';
+  const adminPages = ['admin-empresas', 'admin-lista-empresas', 'admin-usuarios'];
+  const gerentePages = ['gerente-equipe'];
+
+  if (adminPages.includes(page) && role !== 'admin') {
+    alert('Acesso negado: esta página é exclusiva para Administradores.');
+    return;
+  }
+
+  if (gerentePages.includes(page) && role !== 'gerente' && role !== 'admin') {
+    alert('Acesso negado: esta página é restrita a Gerentes ou Administradores.');
+    return;
+  }
+  // ─────────────────────
+
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   
@@ -1268,7 +1284,7 @@ function navTo(page, btn) {
     chat: ['Chat com IA', 'Assistente Helios'],
     'admin-empresas': ['Cadastrar Empresa', 'Painel de expansão do Helios'],
     'admin-lista-empresas': ['Empresas Cadastradas', 'Painel de gestão de parceiros'],
-    'admin-usuarios': ['Gestão de Usuários', 'Controle de privilégios e papéis'], // ◄ NOVO TÍTULO
+    'admin-usuarios': ['Gestão de Usuários', 'Controle de privilégios e papéis'],
     'gerente-equipe': ['Equipe Vinculada', 'Usuários sob a sua empresa'],
     profile: ['Meu Perfil', 'Gerenciamento dos seus dados'] 
   };
@@ -1276,7 +1292,7 @@ function navTo(page, btn) {
   document.getElementById('topbar-sub').textContent = titles[page][1];
 
   if (page === 'chat') carregarListaConversas();
-  if (page === 'admin-usuarios') loadUsuariosAdmin(); // ◄ NOVA LINHA
+  if (page === 'admin-usuarios') loadUsuariosAdmin();
 }
 
 function navToChat() {
