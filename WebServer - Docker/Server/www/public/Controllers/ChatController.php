@@ -1,12 +1,16 @@
 <?php
 
+require_once __DIR__ . '/../Models/HistoricoChatModel.php';
+
 class ChatController {
 
     private string $ollamaUrl = 'http://host.docker.internal:11434/api/chat';
     private PDO $pdo;
+    private HistoricoChatModel $historicoModel;
 
     public function __construct(PDO $pdo) {
         $this->pdo = $pdo;
+        $this->historicoModel = new HistoricoChatModel();
     }
 
     public function chat(): void {
@@ -23,16 +27,13 @@ class ChatController {
             return;
         }
 
-        // 1. Se não veio conversa_id, é uma conversa nova -> cria uma (com título provisório)
         $conversaNova = false;
         if (!$conversa_id && $usuario_id) {
             $conversa_id  = $this->criarNovaConversa($usuario_id, $pergunta);
             $conversaNova = true;
         }
 
-        // 2. Monta o contexto: nome do cliente (system) + histórico da conversa + pergunta atual
         $nome = $this->buscarNomeUsuario($usuario_id);
-
         $messages = [];
 
         if ($nome) {
@@ -45,7 +46,6 @@ class ChatController {
         $messages = array_merge($messages, $this->buscarHistorico($usuario_id, $conversa_id));
         $messages[] = ['role' => 'user', 'content' => $pergunta];
 
-        // 3. Chama o Ollama para gerar a resposta
         $resposta = $this->chamarOllama($messages, 4096, 0.7);
 
         if ($resposta === null) {
@@ -57,10 +57,15 @@ class ChatController {
             return;
         }
 
+        // Grava no MySQL + Mongo ao mesmo tempo, via HistoricoChatModel
+        $this->historicoModel->registrar(
+            (int) $usuario_id,
+            $pergunta,
+            $resposta,
+            '',
+            (int) $conversa_id
+        );
 
-        $this->salvarMensagem($usuario_id, $conversa_id, $pergunta, $resposta);
-
-        // 5. 
         if ($conversaNova) {
             $this->atualizarTituloConversa($conversa_id, $pergunta, $resposta);
         }
@@ -72,10 +77,6 @@ class ChatController {
         ]);
     }
 
-    /**
-     * Faz uma chamada genérica ao Ollama e devolve o texto da resposta,
-     * ou null se der erro de conexão/HTTP.
-     */
     private function chamarOllama(array $messages, int $numCtx = 4096, float $temperature = 0.7): ?string
     {
         $payload = json_encode([
@@ -111,14 +112,9 @@ class ChatController {
         return $data['message']['content'] ?? null;
     }
 
-    /**
-     * Gera um título curto e descritivo (igual o Claude gera pra suas conversas)
-     * a partir da primeira pergunta + resposta, e atualiza a conversa no banco.
-     * Se der qualquer problema, simplesmente mantém o título provisório — não quebra o fluxo.
-     */
     private function atualizarTituloConversa(int $conversa_id, string $pergunta, string $resposta): void
     {
-        $resumoResposta = mb_substr($resposta, 0, 400); // não precisa mandar a resposta inteira pra gerar o título
+        $resumoResposta = mb_substr($resposta, 0, 400);
 
         $promptTitulo = [
             [
@@ -135,10 +131,9 @@ class ChatController {
         $titulo = $this->chamarOllama($promptTitulo, 512, 0.3);
 
         if (!$titulo) {
-            return; // Ollama falhou nessa chamada extra: mantém o título provisório, sem problema
+            return;
         }
 
-        // Limpeza básica: tira aspas, quebras de linha e limita tamanho
         $titulo = trim($titulo, " \t\n\r\0\x0B\"'“”");
         $titulo = preg_replace('/\s+/', ' ', $titulo);
         $titulo = mb_substr($titulo, 0, 80);
@@ -151,10 +146,6 @@ class ChatController {
         $stmt->execute([':titulo' => $titulo, ':id' => $conversa_id]);
     }
 
-    /**
-     * Busca o nome do usuário para ser injetado no contexto da IA,
-     * assim como um sistema de IA já "sabe" quem está falando com ele.
-     */
     private function buscarNomeUsuario($usuario_id): ?string
     {
         if (!$usuario_id) return null;
@@ -167,11 +158,6 @@ class ChatController {
         return $row['nome'] ?? null;
     }
 
-    /**
-     * Cria uma nova conversa quando o front não manda conversa_id
-     * (equivalente a abrir um "chat novo"). Usa um título provisório
-     * (início da pergunta) até o título de verdade ser gerado pela IA.
-     */
     private function criarNovaConversa($usuario_id, string $pergunta): int
     {
         $tituloProvisorio = mb_substr($pergunta, 0, 60);
@@ -186,9 +172,6 @@ class ChatController {
         return (int) $this->pdo->lastInsertId();
     }
 
-    /**
-     * Busca o histórico apenas DESSA conversa (não mistura com outras).
-     */
     private function buscarHistorico($usuario_id, $conversa_id): array
     {
         if (!$usuario_id || !$conversa_id) return [];
@@ -214,21 +197,5 @@ class ChatController {
         }
 
         return $messages;
-    }
-
-    private function salvarMensagem($usuario_id, $conversa_id, string $pergunta, string $resposta): void
-    {
-        if (!$usuario_id) return;
-
-        $sql = "INSERT INTO historico_chat (usuario_id, conversa_id, pergunta_tecnica, resposta_ia) 
-                VALUES (:usuario_id, :conversa_id, :pergunta, :resposta)";
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':usuario_id'  => $usuario_id,
-            ':conversa_id' => $conversa_id,
-            ':pergunta'    => $pergunta,
-            ':resposta'    => $resposta
-        ]);
     }
 }
