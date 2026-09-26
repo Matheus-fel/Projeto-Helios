@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/Controller.php';
-require_once __DIR__ . '/../models/HistoricoChatModel.php';
+require_once __DIR__ . '/../Models/HistoricoChatModel.php';
 
 class HistoricoChatController extends Controller {
     private HistoricoChatModel $model;
