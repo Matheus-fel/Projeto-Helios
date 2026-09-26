@@ -1,0 +1,16 @@
+# Dependências PHP (Composer) — reconstruídas automaticamente no build do Docker
+www/public/vendor/
+
+# Variáveis de ambiente / segredos
+.env
+.env.local
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Uploads/dados locais (se houver pasta de dados gerados em runtime)
+# www/storage/
