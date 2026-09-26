@@ -1,12 +1,15 @@
 <?php
 ob_start();
  
+
+
+require_once __DIR__ . '/vendor/autoload.php';
+
 require_once __DIR__ . '/controllers/EmpresaController.php';
 require_once __DIR__ . '/controllers/UsuarioController.php';
 require_once __DIR__ . '/controllers/HistoricoChatController.php';
 require_once __DIR__ . '/controllers/ChatController.php';
 require_once __DIR__ . '/controllers/ConversaController.php';
- 
 // ── CORS ───────────────────────────────────────────────────────────────────
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
