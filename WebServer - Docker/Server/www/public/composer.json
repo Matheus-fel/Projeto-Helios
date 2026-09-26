@@ -1,0 +1,6 @@
+{
+    "name": "helios/webserver",
+    "require": {
+        "mongodb/mongodb": "^2.4"
+    }
+}
