@@ -6,6 +6,7 @@
 - **PHP-FPM** → Processamento PHP (8.2)
 - **MySQL 8.0** → Banco de dados
 - **phpMyAdmin** → Interface web (porta 8051)
+- **Mongo express** → Interface web (porta 8052)
 
 link para o [Diagrama de redes do docker](https://drive.google.com/file/d/1NvmEF4hLQMWwdvzO_TSISjyE5SM3O_3L/view?usp=sharing)
  
@@ -42,6 +43,8 @@ docker compose logs -f nginx
 docker network ls
 docker network inspect backend_net
 
+# 5. Instalação do auto loud
+docker exec -it -w /var/www/html/public php_server compose install 
 
 ## Redes Docker - Isolamento
 
