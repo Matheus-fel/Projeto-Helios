@@ -1,6 +1,7 @@
 {
     "name": "helios/webserver",
     "require": {
-        "mongodb/mongodb": "^2.4"
+        "mongodb/mongodb": "^2.4",
+        "firebase/php-jwt": "^7.2"
     }
 }
