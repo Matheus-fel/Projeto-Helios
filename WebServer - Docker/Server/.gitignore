@@ -1,5 +1,6 @@
 # Dependências PHP (Composer) — reconstruídas automaticamente no build do Docker
-www/public/vendor/
+vendor/
+**/vendor/
 
 # Variáveis de ambiente / segredos
 .env
