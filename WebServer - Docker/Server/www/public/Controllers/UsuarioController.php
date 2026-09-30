@@ -157,10 +157,27 @@ class UsuarioController extends Controller {
         if (empty($data['email']) || empty($data['senha'])) {
             $this->error('E-mail e senha sao obrigatorios', 422);
         }
+
         $usuario = $this->model->autenticar($data['email'], $data['senha']);
-        $usuario
-            ? $this->success($usuario, 'Login realizado')
-            : $this->error('Credenciais invalidas', 401);
+
+        if ($usuario) {
+            // Garante que o JwtHandler seja carregado
+            require_once __DIR__ . '/../JwtHandler.php';
+
+            // Gera o token JWT assinado
+            $token = JwtHandler::gerarToken([
+                'id'           => $usuario['id'],
+                'email'        => $usuario['email'],
+                'nivel_acesso' => $usuario['nivel_acesso']
+            ]);
+
+            // Anexa o token ao retorno do usuário
+            $usuario['token'] = $token;
+
+            $this->success($usuario, 'Login realizado');
+        } else {
+            $this->error('Credenciais invalidas', 401);
+        }
     }
  
     public function historico(int $id): void {
