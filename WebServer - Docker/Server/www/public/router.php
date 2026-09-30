@@ -2,7 +2,7 @@
 ob_start();
  
 
-
+require_once __DIR__ . '/JwtHandler.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 require_once __DIR__ . '/controllers/EmpresaController.php';
@@ -22,6 +22,33 @@ function jsonError(string $msg, int $code = 404): void {
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['success' => false, 'message' => $msg]);
     exit;
+}
+
+function requireRole(array $rolesPermitidas = []): object {
+    // 1. Captura os cabeçalhos da requisição
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+
+    // 2. Valida se o cabeçalho Authorization com formato Bearer foi enviado
+    if (empty($authHeader) || !preg_match('/Bearer\s(\S+)/i', $authHeader, $matches)) {
+        jsonError('Token de autenticação não fornecido ou em formato inválido.', 401);
+    }
+
+    $token = $matches[1];
+
+    // 3. Valida a assinatura e o tempo de expiração do token JWT
+    $payload = JwtHandler::validarToken($token);
+
+    if (!$payload) {
+        jsonError('Token inválido ou expirado. Faça login novamente.', 401);
+    }
+
+    // 4. Se houver restrição de níveis de acesso, valida se o perfil do usuário é permitido
+    if (!empty($rolesPermitidas) && !in_array($payload->nivel_acesso, $rolesPermitidas, true)) {
+        jsonError('Acesso negado. Seu perfil não tem permissão para acessar esta funcionalidade.', 403);
+    }
+
+    return $payload; // Retorna os dados do usuário autenticado contidos no token
 }
 
 // ── Conexão com o banco (usada pelo ChatController e ConversaController) ───
@@ -87,11 +114,8 @@ try {
                 match ($method) {
                     'GET'  => $ctrl->index(),
                     'POST' => (function() use ($ctrl) {
-                        // Trava de segurança no backend
-                        $role = $_SERVER['HTTP_X_USER_ROLE'] ?? $_POST['solicitante_role'] ?? null;
-                        if ($role !== 'admin') {
-                            jsonError('Acesso negado. Apenas administradores podem cadastrar empresas.', 403);
-                        }
+                        // Trava JWT profissional: apenas 'admin' pode cadastrar empresas
+                        requireRole(['admin']);
                         $ctrl->store();
                     })(),
                     default => jsonError('Método não permitido', 405),
