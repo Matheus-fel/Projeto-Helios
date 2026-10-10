@@ -35,9 +35,7 @@ class HistoricoChatModel {
 
         try {
             $this->mongo->insertOne([
-                'historico_id'        => $id,
-                'usuario_id'          => $usuario_id,
-                'conversa_id'         => $conversa_id,
+                                
                 'pergunta_tecnica'    => $pergunta,
                 'resposta_ia'         => $resposta,
                 'normas_relacionadas' => $normas,
