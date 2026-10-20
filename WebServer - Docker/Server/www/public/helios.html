@@ -726,12 +726,34 @@ let currentUser = null;
 let isEditingProfile = false;
 let currentConversaId = null; // conversa ativa no chat (null = ainda não começou / nova conversa)
 
-function apiFetch(path, options = {}) {
-  return fetch(BASE + path, {
+function getAuthToken() {
+  return localStorage.getItem('helios_token') || currentUser?.token || '';
+}
+
+async function apiFetch(path, options = {}) {
+  const token = getAuthToken();
+  const headers = { 
+    'Content-Type': 'application/json', 
+    ...(options.headers || {}) 
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(BASE + path, {
     mode: 'cors',
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers,
     ...options
   });
+
+  // Se o backend responder 401 (token expirado/inválido), desloga automaticamente
+  if (response.status === 401 && !path.includes('/usuarios/login')) {
+    alert('Sua sessão expirou. Por favor, faça login novamente.');
+    doLogout();
+  }
+
+  return response;
 }
 
 function showScreen(id) {
@@ -788,6 +810,9 @@ async function doLogin() {
     const data = await r.json();
     if (r.ok) {
       currentUser = data.data || data.usuario || data;
+      if (currentUser.token) {
+        localStorage.setItem('helios_token', currentUser.token);
+      }
       enterApp(currentUser);
     } else {
       showError('login-error', data.message || 'E-mail ou senha incorretos.');
@@ -1154,6 +1179,7 @@ async function saveProfileChanges() {
 function doLogout() {
   currentUser = null;
   currentConversaId = null;
+  localStorage.removeItem('helios_token');
   showScreen('login-screen');
   document.getElementById('convList').innerHTML = '<div class="conv-empty">Carregando...</div>';
   document.getElementById('chatMessages').innerHTML = `
