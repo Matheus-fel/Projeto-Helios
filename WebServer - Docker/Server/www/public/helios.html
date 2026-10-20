@@ -902,6 +902,8 @@ function enterApp(user) {
   }
 
   showScreen('app-screen');
+  const firstNavBtn = document.querySelector('.nav-btn');
+  navTo('dash', firstNavBtn); // ◄ Garante que todo novo login sempre inicie no Dashboard
   loadDashStats();
   checkDbApp();
 }

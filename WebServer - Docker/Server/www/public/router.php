@@ -84,10 +84,12 @@ try {
  
         case 'chat':
             if ($method !== 'POST') jsonError('Método não permitido', 405);
+            requireRole(); // ◄ Exige token válido para usar a IA
             (new ChatController(getPdo()))->chat();
             break;
 
         case 'conversas':
+            requireRole(); // ◄ Exige token válido para acessar/manipular conversas
             $ctrl = new ConversaController(getPdo());
 
             if ($id === null) {
@@ -112,10 +114,12 @@ try {
             $ctrl = new EmpresaController();
             if ($id === null) {
                 match ($method) {
-                    'GET'  => $ctrl->index(),
+                    'GET'  => (function() use ($ctrl) {
+                        requireRole(); // ◄ Exige login para listar
+                        $ctrl->index();
+                    })(),
                     'POST' => (function() use ($ctrl) {
-                        // Trava JWT profissional: apenas 'admin' pode cadastrar empresas
-                        requireRole(['admin']);
+                        requireRole(['admin']); // ◄ Apenas Admin pode criar empresas
                         $ctrl->store();
                     })(),
                     default => jsonError('Método não permitido', 405),
@@ -126,17 +130,26 @@ try {
         case 'usuarios':
             $ctrl = new UsuarioController();
  
+            // 1. Rota de Login (Pública)
             if ($method === 'POST' && $sub === 'login' && $id === null) {
                 $ctrl->login();
                 break;
             }
  
+            // 2. Rota de Criar Conta / Cadastro (Pública)
+            if ($method === 'POST' && $id === null) {
+                $ctrl->store();
+                break;
+            }
+
+            // 3. Todas as outras rotas de /usuarios exigem token JWT
+            $usuarioLogado = requireRole();
+
             if ($id === null) {
                 match ($method) {
                     'GET'    => $ctrl->index(),
-                    'POST'   => $ctrl->store(),
-                    'PUT'    => $ctrl->update(),   // ◄ Aceita PUT vindo do Perfil (ID no JSON)
-                    'DELETE' => $ctrl->destroy(),  // ◄ Aceita DELETE vindo do Perfil (ID no JSON)
+                    'PUT'    => $ctrl->update(),   // Update vindo do Perfil
+                    'DELETE' => $ctrl->destroy(),  // Delete vindo da Equipe
                     default  => jsonError('Método não permitido', 405),
                 };
                 break;
@@ -156,6 +169,7 @@ try {
             break;
  
         case 'historico':
+            requireRole(); // ◄ Exige token válido
             $ctrl = new HistoricoChatController();
             if ($id === null) {
                 match ($method) {
