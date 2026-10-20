@@ -84,13 +84,17 @@ try {
  
         case 'chat':
             if ($method !== 'POST') jsonError('Método não permitido', 405);
-            requireRole(); // ◄ Exige token válido para usar a IA
-            (new ChatController(getPdo()))->chat();
+            $usuarioLogado = requireRole(); // ◄ Captura o usuário logado via JWT
+            
+            // Passa o ID verificado do JWT diretamente para o método chat() do controller
+            (new ChatController(getPdo()))->chat($usuarioLogado->sub);
             break;
 
         case 'conversas':
-            requireRole(); // ◄ Exige token válido para acessar/manipular conversas
+            $usuarioLogado = requireRole(); // ◄ Exige token e captura dados
             $ctrl = new ConversaController(getPdo());
+
+            // É possível passar $usuarioLogado->sub para filtrar apenas as conversas do usuário logado
 
             if ($id === null) {
                 match ($method) {

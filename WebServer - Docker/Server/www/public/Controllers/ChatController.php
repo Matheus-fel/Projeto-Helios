@@ -13,12 +13,12 @@ class ChatController {
         $this->historicoModel = new HistoricoChatModel();
     }
 
-    public function chat(): void {
+    public function chat(?int $usuarioIdJwt = null): void {
         header('Content-Type: application/json; charset=utf-8');
 
         $body = json_decode(file_get_contents('php://input'), true);
         $pergunta    = trim($body['pergunta'] ?? '');
-        $usuario_id  = $body['usuario_id'] ?? null;
+        $usuario_id  = $usuarioIdJwt ?? ($body['usuario_id'] ?? null); // ◄ Dá prioridade absoluta ao ID do JWT
         $conversa_id = $body['conversa_id'] ?? null;
 
         if (empty($pergunta)) {
