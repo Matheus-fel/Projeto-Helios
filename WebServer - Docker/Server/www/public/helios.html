@@ -210,6 +210,20 @@ body {
   font-size: 1rem; padding: 4px; transition: color .15s;
 }
 .btn-logout:hover { color: var(--error); }
+.user-profile-click {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  flex: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 8px;
+  transition: background .15s;
+  overflow: hidden;
+}
+.user-profile-click:hover {
+  background: var(--surface2);
+}
 .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .topbar {
   padding: 1rem 1.5rem;
@@ -468,7 +482,7 @@ body {
         <span class="nav-icon">💬</span> Chat com IA
       </button>
 
-      <button class="nav-btn" onclick="navTo('profile', this)">
+      <button class="nav-btn" id="nav-profile" onclick="navTo('profile', this)">
         <span class="nav-icon">👤</span> Meu Perfil
       </button>
       
@@ -495,10 +509,12 @@ body {
     </div>
 
     <div class="sidebar-footer">
-      <div class="user-avatar" id="sidebar-avatar">JS</div>
-      <div class="user-info">
-        <div class="user-name" id="sidebar-name">—</div>
-        <div class="user-role" id="sidebar-role">—</div>
+      <div class="user-profile-click" onclick="navToProfile()" title="Ver Meu Perfil">
+        <div class="user-avatar" id="sidebar-avatar">JS</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-name">—</div>
+          <div class="user-role" id="sidebar-role">—</div>
+        </div>
       </div>
       <button class="btn-logout" onclick="doLogout()" title="Sair">✕</button>
     </div>
@@ -1487,6 +1503,11 @@ function navToChat() {
   navTo('chat', btnChat);
   carregarListaConversas();
   document.getElementById('chatInput').focus();
+}
+
+function navToProfile() {
+  const btnProfile = document.getElementById('nav-profile');
+  navTo('profile', btnProfile);
 }
 
 async function loadDashStats() {
