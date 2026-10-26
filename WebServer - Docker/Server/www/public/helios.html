@@ -697,16 +697,27 @@ body {
     <div class="page" id="page-profile">
       <div class="dash-content">
         <div class="profile-wrapper">
+          <!-- Cabeçalho do Perfil com Avatar, Badge de Cargo e Status JWT -->
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border);">
+            <div class="user-avatar" id="prof-avatar" style="width: 56px; height: 56px; font-size: 1.2rem;">JS</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: .5rem;">
+                <h3 id="prof-display-nome" style="font-family:'Syne',sans-serif; font-size: 1.1rem;">Carregando...</h3>
+                <span id="prof-badge-role" style="font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; text-transform: uppercase;">—</span>
+              </div>
+              <div style="font-size: .78rem; color: var(--muted2); margin-top: 2px;" id="prof-display-email">—</div>
+              <div style="font-size: .7rem; color: var(--success); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                <span>●</span> <span id="prof-jwt-status">Sessão Autenticada via JWT</span>
+              </div>
+            </div>
+          </div>
+
           <div class="error-msg" id="profile-error"></div>
           <div class="success-msg" id="profile-success"></div>
           
           <div class="form-group">
             <label>Nível de Acesso</label>
-            <select id="prof-nivel" disabled>
-              <option value="operador">Operador</option>
-              <option value="gerente">Gerente</option>
-              <option value="admin">Admin</option>
-            </select>
+            <input type="text" id="prof-nivel" disabled style="opacity: 0.7; cursor: not-allowed;">
           </div>
 
           <div class="form-group">
@@ -720,8 +731,8 @@ body {
           </div>
 
           <div class="form-group" id="prof-group-empresa">
-            <label>ID da Empresa Vinculada</label>
-            <input type="number" id="prof-empresa" placeholder="Ex: 1" disabled>
+            <label>Empresa Vinculada (ID)</label>
+            <input type="text" id="prof-empresa" placeholder="Não vinculada" disabled style="opacity: 0.7; cursor: not-allowed;">
           </div>
 
           <div style="display: flex; gap: .75rem; margin-top: 1.5rem;">
@@ -891,10 +902,33 @@ function enterApp(user) {
 
   carregarListaConversas();
 
-  document.getElementById('prof-nivel').value = role;
+  // ─── PREENCHIMENTO DOS DADOS DO PERFIL ───
+  document.getElementById('prof-avatar').textContent = iniciais;
+  document.getElementById('prof-display-nome').textContent = user.nome || 'Usuário';
+  document.getElementById('prof-display-email').textContent = user.email || '';
+
+  const badgeRole = document.getElementById('prof-badge-role');
+  badgeRole.textContent = role.toUpperCase();
+  
+  // Estilização dinâmica da Badge de Cargo
+  if (role === 'admin') {
+    badgeRole.style.cssText = 'font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:12px; background:#f5a62322; color:var(--gold); border:1px solid #f5a62344;';
+  } else if (role === 'gerente') {
+    badgeRole.style.cssText = 'font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:12px; background:#3b82f622; color:var(--blue); border:1px solid #3b82f644;';
+  } else {
+    badgeRole.style.cssText = 'font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:12px; background:#10b98122; color:var(--success); border:1px solid #10b98144;';
+  }
+
+  document.getElementById('prof-nivel').value = capitalize(role);
   document.getElementById('prof-nome').value = user.nome || '';
   document.getElementById('prof-email').value = user.email || '';
-  document.getElementById('prof-empresa').value = user.empresa_id || '';
+  if (role === 'admin') {
+    document.getElementById('prof-empresa').value = 'Acesso Global (Administrador)';
+  } else if (user.empresa_id) {
+    document.getElementById('prof-empresa').value = `Empresa ID #${user.empresa_id}`;
+  } else {
+    document.getElementById('prof-empresa').value = 'Nenhuma empresa vinculada';
+  }
 
   // ─── LIBERAÇÃO E CARREGAMENTO DE TELAS BASEADO NO PERFIL ───
   document.getElementById('nav-admin-empresas').style.display = 'none';
@@ -907,7 +941,7 @@ function enterApp(user) {
     document.getElementById('nav-admin-empresas').style.display = 'flex';
     document.getElementById('nav-admin-lista-empresas').style.display = 'flex';
     document.getElementById('nav-admin-usuarios').style.display = 'flex'; // ◄ NOVA LINHA
-    document.getElementById('prof-group-empresa').style.display = 'none';
+    document.getElementById('prof-group-empresa').style.display = 'block';
     loadListaEmpresas();
     loadUsuariosAdmin(); // ◄ NOVA LINHA
   } else if (role === 'gerente') {
@@ -1013,7 +1047,7 @@ async function loadUsuariosAdmin() {
             <td>${u.id}</td>
             <td>${escHtml(u.nome)} ${isSelf ? '<span style="color:var(--gold); font-size:.75rem;">(Você)</span>' : ''}</td>
             <td>${escHtml(u.email)}</td>
-            <td>${u.empresa_id ? u.empresa_id : '<span style="color:var(--muted);">Global (Admin)</span>'}</td>
+            <td>${u.empresa_id ? u.empresa_id : (u.nivel_acesso === 'admin' ? '<span style="color:var(--gold);">Global (Admin)</span>' : '<span style="color:var(--muted);">Sem Empresa</span>')}</td>
             <td>
               <select id="select-role-${u.id}" style="padding:.3rem .5rem; font-size:.8rem; width:auto;" ${isSelf ? 'disabled' : ''}>
                 <option value="operador" ${u.nivel_acesso === 'operador' ? 'selected' : ''}>Operador</option>
@@ -1116,10 +1150,9 @@ function truncar(texto, max = 80) {
 
 function toggleEditProfile() {
   isEditingProfile = !isEditingProfile;
+  
+  // Apenas Nome e E-mail podem ser editados pelo usuário
   const inputs = ['prof-nome', 'prof-email'];
-  if (currentUser && currentUser.nivel_acesso !== 'admin') {
-    inputs.push('prof-empresa');
-  }
   
   inputs.forEach(id => {
     document.getElementById(id).disabled = !isEditingProfile;
@@ -1135,10 +1168,10 @@ function toggleEditProfile() {
     btnEdit.textContent = 'Editar Dados';
     btnSave.style.display = 'none';
     
-    document.getElementById('prof-nivel').value = currentUser.nivel_acesso || 'operador';
+    // 💡 Aplica o capitalize() para manter sempre 'Admin', 'Gerente' ou 'Operador'
+    document.getElementById('prof-nivel').value = capitalize(currentUser.nivel_acesso || 'operador');
     document.getElementById('prof-nome').value = currentUser.nome || '';
     document.getElementById('prof-email').value = currentUser.email || '';
-    document.getElementById('prof-empresa').value = currentUser.empresa_id || '';
     hideError('profile-error');
   }
 }
@@ -1147,7 +1180,6 @@ async function saveProfileChanges() {
   hideError('profile-error');
   const nome = document.getElementById('prof-nome').value.trim();
   const email = document.getElementById('prof-email').value.trim();
-  const empresa_id = document.getElementById('prof-empresa').value;
 
   if (!nome || !email) {
     showError('profile-error', 'Nome e E-mail são obrigatórios.');
@@ -1161,11 +1193,9 @@ async function saveProfileChanges() {
       id: idUsuario,
       nome,
       email,
-      nivel_acesso: currentUser.nivel_acesso
+      nivel_acesso: currentUser.nivel_acesso,
+      empresa_id: currentUser.empresa_id || 0
     };
-    if (currentUser.nivel_acesso !== 'admin') {
-      body.empresa_id = empresa_id ? parseInt(empresa_id) : 0;
-    }
 
     const r = await apiFetch('/usuarios', {
       method: 'PUT',
@@ -1175,13 +1205,21 @@ async function saveProfileChanges() {
     const resData = await r.json();
 
     if (r.ok) {
+      // 1. Atualiza os dados do objeto em memória
       currentUser.nome = nome;
       currentUser.email = email;
-      if (currentUser.nivel_acesso !== 'admin') {
-        currentUser.empresa_id = empresa_id ? parseInt(empresa_id) : 0;
-      }
+
+      // 2. Atualiza elementos visuais sem mudar de tela
+      const iniciais = nome.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+      document.getElementById('sidebar-avatar').textContent = iniciais;
+      document.getElementById('sidebar-name').textContent = nome;
+      document.getElementById('welcome-title').textContent = `Olá, ${nome.split(' ')[0]}!`;
       
-      enterApp(currentUser);
+      document.getElementById('prof-avatar').textContent = iniciais;
+      document.getElementById('prof-display-nome').textContent = nome;
+      document.getElementById('prof-display-email').textContent = email;
+
+      // 3. Fecha o modo de edição e exibe o alerta verde na própria tela
       toggleEditProfile();
       showSuccess('profile-success', 'Dados atualizados com sucesso!');
     } else {
