@@ -139,14 +139,21 @@ try {
                 $ctrl->login();
                 break;
             }
+
+            // 2. Rota de Alteração de Senha (Exige JWT)
+            if (($method === 'PUT' || $method === 'POST') && $sub === 'alterar-senha') {
+                $usuarioLogado = requireRole();
+                $ctrl->alterarSenha($usuarioLogado->sub);
+                break;
+            }
  
-            // 2. Rota de Criar Conta / Cadastro (Pública)
-            if ($method === 'POST' && $id === null) {
+            // 3. Rota de Criar Conta / Cadastro (Pública - se não houver sub-rota)
+            if ($method === 'POST' && $id === null && empty($sub)) {
                 $ctrl->store();
                 break;
             }
 
-            // 3. Todas as outras rotas de /usuarios exigem token JWT
+            // 4. Todas as outras rotas de /usuarios exigem token JWT
             $usuarioLogado = requireRole();
 
             if ($id === null) {

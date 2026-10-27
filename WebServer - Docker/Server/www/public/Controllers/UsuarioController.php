@@ -184,4 +184,50 @@ class UsuarioController extends Controller {
         $limit = (int) ($this->param('limit') ?? 20);
         $this->success($this->model->historico($id, $limit));
     }
+
+    public function alterarSenha(int $usuarioIdLogado): void {
+        $data = $this->body();
+        if (empty($data)) {
+            $rawInput = file_get_contents('php://input');
+            $data = json_decode($rawInput, true) ?? [];
+        }
+
+        $senhaAtual      = $data['senha_atual'] ?? '';
+        $novaSenha      = $data['nova_senha'] ?? '';
+        $confirmarSenha = $data['confirmar_senha'] ?? '';
+
+        // 1. Validação de campos obrigatórios
+        if (empty($senhaAtual) || empty($novaSenha) || empty($confirmarSenha)) {
+            $this->error('Preencha todos os campos de senha.', 422);
+        }
+
+        // 2. Confirmação de igualdade
+        if ($novaSenha !== $confirmarSenha) {
+            $this->error('A nova senha e a confirmação não coincidem.', 422);
+        }
+
+        // 3. Tamanho mínimo da senha
+        if (strlen($novaSenha) < 6) {
+            $this->error('A nova senha deve ter no mínimo 6 caracteres.', 422);
+        }
+
+        // 4. Busca o usuário no banco para verificar a senha atual
+        $usuario = $this->model->find($usuarioIdLogado);
+        if (!$usuario) {
+            $this->error('Usuário não encontrado.', 404);
+        }
+
+        if (!password_verify($senhaAtual, $usuario['senha_hash'])) {
+            $this->error('A senha atual está incorreta.', 400);
+        }
+
+        // 5. Gera a nova hash e salva no banco
+        $novaSenhaHash = password_hash($novaSenha, PASSWORD_BCRYPT);
+
+        if ($this->model->update($usuarioIdLogado, ['senha_hash' => $novaSenhaHash])) {
+            $this->success(null, 'Senha alterada com sucesso!');
+        } else {
+            $this->error('Não foi possível atualizar a senha.', 500);
+        }
+    }
 }

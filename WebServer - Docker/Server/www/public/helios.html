@@ -739,6 +739,34 @@ body {
             <button class="btn-main btn-secondary" id="btn-edit" onclick="toggleEditProfile()">Editar Dados</button>
             <button class="btn-main" id="btn-save-profile" onclick="saveProfileChanges()" style="display:none; margin-top:0;">Salvar Alterações</button>
           </div>
+
+          <!-- Bloco de Segurança da Conta -->
+          <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+            <h4 style="font-family:'Syne',sans-serif; font-size: 1rem; margin-bottom: 1rem; color: var(--text);">Segurança da Conta</h4>
+            
+            <div class="error-msg" id="pass-error" style="display:none; margin-bottom: 1rem;"></div>
+            <div class="success-msg" id="pass-success" style="display:none; margin-bottom: 1rem;"></div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label>Senha Atual</label>
+              <input type="password" id="prof-senha-atual" placeholder="••••••••">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label>Nova Senha</label>
+                <input type="password" id="prof-nova-senha" placeholder="Mínimo 6 caracteres">
+              </div>
+              <div class="form-group">
+                <label>Confirmar Nova Senha</label>
+                <input type="password" id="prof-confirma-senha" placeholder="Repita a nova senha">
+              </div>
+            </div>
+
+            <button class="btn-main btn-secondary" id="btn-change-pass" onclick="changePassword()" style="width: auto;">
+              Alterar Senha
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -891,6 +919,10 @@ async function doRegister() {
 }
 
 function enterApp(user) {
+  resetProfileAlerts();
+
+  currentUser = user;
+  
   const nome = user.nome || user.email || 'Usuário';
   const iniciais = nome.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
   const role = user.nivel_acesso || 'operador';
@@ -1232,6 +1264,91 @@ async function saveProfileChanges() {
   }
 }
 
+async function changePassword() {
+  const errDiv = document.getElementById('pass-error');
+  const succDiv = document.getElementById('pass-success');
+
+  // Reseta mensagens anteriores
+  if (errDiv) { errDiv.textContent = ''; errDiv.style.display = 'none'; }
+  if (succDiv) { succDiv.textContent = ''; succDiv.style.display = 'none'; }
+
+  const senhaAtual = document.getElementById('prof-senha-atual').value;
+  const novaSenha = document.getElementById('prof-nova-senha').value;
+  const confirmaSenha = document.getElementById('prof-confirma-senha').value;
+
+  // Validações no Frontend
+  if (!senhaAtual || !novaSenha || !confirmaSenha) {
+    if (errDiv) { errDiv.textContent = 'Preencha todos os campos de senha.'; errDiv.style.display = 'block'; }
+    return;
+  }
+
+  if (novaSenha !== confirmaSenha) {
+    if (errDiv) { errDiv.textContent = 'A nova senha e a confirmação não coincidem.'; errDiv.style.display = 'block'; }
+    return;
+  }
+
+  if (novaSenha.length < 6) {
+    if (errDiv) { errDiv.textContent = 'A nova senha deve ter no mínimo 6 caracteres.'; errDiv.style.display = 'block'; }
+    return;
+  }
+
+  const btn = document.getElementById('btn-change-pass');
+  if (btn) { btn.disabled = true; btn.textContent = 'Alterando...'; }
+
+  try {
+    const r = await apiFetch('/usuarios/alterar-senha', {
+      method: 'POST',
+      body: JSON.stringify({
+        senha_atual: senhaAtual,
+        nova_senha: novaSenha,
+        confirmar_senha: confirmaSenha
+      })
+    });
+
+    const resData = await r.json();
+
+    if (r.ok && resData.success !== false) {
+      if (succDiv) {
+        succDiv.textContent = resData.message || 'Senha alterada com sucesso!';
+        succDiv.style.display = 'block';
+      }
+      document.getElementById('prof-senha-atual').value = '';
+      document.getElementById('prof-nova-senha').value = '';
+      document.getElementById('prof-confirma-senha').value = '';
+    } else {
+      if (errDiv) {
+        errDiv.textContent = resData.message || 'Erro ao alterar senha.';
+        errDiv.style.display = 'block';
+      }
+    }
+  } catch (e) {
+    if (errDiv) {
+      errDiv.textContent = 'Erro de comunicação com o servidor.';
+      errDiv.style.display = 'block';
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Alterar Senha'; }
+  }
+}
+
+function resetProfileAlerts() {
+  const alertIds = ['profile-error', 'profile-success', 'pass-error', 'pass-success'];
+  
+  alertIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = '';
+      el.style.display = 'none';
+    }
+  });
+
+  // Limpa também os campos de senha por segurança
+  ['prof-senha-atual', 'prof-nova-senha', 'prof-confirma-senha'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
 function doLogout() {
   currentUser = null;
   currentConversaId = null;
@@ -1534,6 +1651,10 @@ function navTo(page, btn) {
 
   if (page === 'chat') carregarListaConversas();
   if (page === 'admin-usuarios') loadUsuariosAdmin();
+
+  if (page === 'profile') {
+    resetProfileAlerts();
+  }
 }
 
 function navToChat() {
