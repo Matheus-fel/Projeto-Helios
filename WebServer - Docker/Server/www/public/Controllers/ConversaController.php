@@ -8,10 +8,7 @@ class ConversaController {
         $this->pdo = $pdo;
     }
 
-    /**
-     * GET /conversas?usuario_id=X
-     * Lista as conversas do usuário, mais recente primeiro (igual à barra lateral do Claude).
-     */
+    
     public function index(): void
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -24,17 +21,42 @@ class ConversaController {
             return;
         }
 
-        $sql = "SELECT id, titulo, criado_em 
-                FROM conversas 
-                WHERE usuario_id = :usuario_id 
-                ORDER BY criado_em DESC 
-                LIMIT 50";
+        $q = mb_substr(trim((string) ($_GET['q'] ?? '')), 0, 100);
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':usuario_id' => $usuario_id]);
-        $conversas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sql    = "SELECT c.id, c.titulo, c.criado_em
+                   FROM conversas c
+                   WHERE c.usuario_id = :usuario_id";
+        $params = [':usuario_id' => $usuario_id];
 
-        echo json_encode(['success' => true, 'data' => $conversas]);
+        if ($q !== '') {
+            // escapa os curingas do LIKE para o usuário buscar "50%" ou "a_b" literalmente
+            $like = '%' . addcslashes($q, '%_\\') . '%';
+
+            $sql .= " AND (c.titulo LIKE :q_titulo
+                       OR EXISTS (SELECT 1 FROM historico_chat h
+                                  WHERE h.conversa_id = c.id
+                                    AND (h.pergunta_tecnica LIKE :q_pergunta
+                                      OR h.resposta_ia      LIKE :q_resposta)))";
+            $params[':q_titulo']   = $like;
+            $params[':q_pergunta'] = $like;
+            $params[':q_resposta'] = $like;
+        }
+
+        $sql .= " ORDER BY c.criado_em DESC LIMIT 50";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $conversas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('[ConversaController::index] ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro ao listar conversas.']);
+            return;
+        }
+
+        // "q" é devolvido para o front saber que o backend aplicou o filtro
+        echo json_encode(['success' => true, 'q' => $q, 'data' => $conversas]);
     }
 
     /**
@@ -60,14 +82,27 @@ class ConversaController {
     /**
      * DELETE /conversas/{id}
      * Apaga a conversa e (via ON DELETE CASCADE) suas mensagens.
+     * 404 se a conversa não existe; 500 com mensagem amigável se o banco falhar.
      */
     public function destroy(int $conversa_id): void
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        $stmt = $this->pdo->prepare("DELETE FROM conversas WHERE id = :id");
-        $stmt->execute([':id' => $conversa_id]);
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM conversas WHERE id = :id");
+            $stmt->execute([':id' => $conversa_id]);
 
-        echo json_encode(['success' => true]);
+            if ($stmt->rowCount() === 0) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Conversa não encontrada.']);
+                return;
+            }
+
+            echo json_encode(['success' => true]);
+        } catch (PDOException $e) {
+            error_log('[ConversaController::destroy] ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Não foi possível excluir a conversa. Tente novamente.']);
+        }
     }
 }

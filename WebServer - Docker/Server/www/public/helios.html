@@ -307,6 +307,116 @@ body {
   0%, 60%, 100% { opacity: .3; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-4px); }
 }
+/* ── Busca nas conversas ── */
+.conv-search { position: relative; padding: 0 .75rem .5rem; }
+.conv-search input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; color: var(--text); font-size: .78rem;
+  font-family: 'DM Sans', sans-serif; padding: .45rem 1.7rem .45rem .65rem; outline: none;
+  transition: border-color .15s;
+}
+.conv-search input:focus { border-color: var(--gold); }
+.conv-search input::placeholder { color: var(--muted); }
+.conv-search-clear {
+  position: absolute; right: 1.1rem; top: 50%; transform: translateY(-65%);
+  background: none; border: none; color: var(--muted); cursor: pointer; font-size: .75rem;
+}
+.conv-search-clear:hover { color: var(--text); }
+.conv-item mark { background: var(--gold-dim); color: var(--gold2); border-radius: 2px; padding: 0 1px; }
+.conv-item.active mark { background: #f5a62344; }
+
+/* ── Área de rolagem + botão "ir para o fim" ── */
+.chat-scroll-wrap { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.chat-scroll-wrap .chat-messages { min-height: 0; }
+.scroll-bottom-btn {
+  position: absolute; right: 1.5rem; bottom: .9rem; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--gold); color: var(--gold);
+  cursor: pointer; font-size: 1rem; box-shadow: 0 4px 14px #0008;
+  opacity: 0; pointer-events: none; transform: translateY(6px);
+  transition: opacity .15s, transform .15s;
+}
+.scroll-bottom-btn.show { opacity: 1; pointer-events: auto; transform: none; }
+.scroll-bottom-btn:hover { background: var(--gold-dim); }
+
+/* ── Markdown nas bolhas da IA ── */
+.msg-bubble { overflow-wrap: anywhere; }
+.msg-bubble.md > :first-child { margin-top: 0; }
+.msg-bubble.md > :last-child { margin-bottom: 0; }
+.msg-bubble.md p { margin: .5em 0; }
+.msg-bubble.md ul, .msg-bubble.md ol { margin: .5em 0; padding-left: 1.4rem; }
+.msg-bubble.md li { margin: .2em 0; }
+.msg-bubble.md li::marker { color: var(--gold); }
+.msg-bubble.md .md-h { margin: .8em 0 .3em; font-weight: 700; color: var(--gold2); font-size: .95em; }
+.msg-bubble.md strong { color: #fff; font-weight: 700; }
+.msg-bubble.md a { color: var(--blue); text-decoration: underline; }
+.msg-bubble.md hr { border: none; border-top: 1px solid var(--border2); margin: .8em 0; }
+.msg-bubble.md blockquote {
+  margin: .5em 0; padding: .1em .8em; border-left: 3px solid var(--gold); color: var(--muted2);
+}
+.msg-bubble.md code {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; font-size: .82em;
+  background: #0b0d13; border: 1px solid var(--border2); border-radius: 4px; padding: .08em .35em;
+}
+.msg-bubble.md pre {
+  margin: .6em 0; background: #0b0d13; border: 1px solid var(--border2);
+  border-radius: 8px; padding: .75rem .9rem; overflow-x: auto;
+}
+.msg-bubble.md pre code { background: none; border: none; padding: 0; font-size: .8rem; line-height: 1.5; white-space: pre; }
+.md-table-wrap { margin: .6em 0; overflow-x: auto; }
+.md-table-wrap table { border-collapse: collapse; font-size: .82rem; min-width: 100%; }
+.md-table-wrap th, .md-table-wrap td { border: 1px solid var(--border2); padding: .35rem .6rem; text-align: left; }
+.md-table-wrap th { background: var(--surface); color: var(--gold2); }
+
+/* ── Typing indicator / erro ── */
+.typing-indicator { gap: 5px; }
+.typing-label { margin-left: .5rem; font-size: .78rem; color: var(--muted2); transition: color .2s; }
+.typing-label.slow { color: var(--gold2); }
+.msg-bubble.msg-error { border-color: #ef444455; background: #ef44440d; }
+.msg-retry-btn {
+  margin-top: .6rem; background: transparent; border: 1px solid var(--gold); color: var(--gold);
+  border-radius: 6px; padding: .3rem .8rem; font-size: .76rem; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: background .15s;
+}
+.msg-retry-btn:hover { background: var(--gold-dim); }
+.btn-send:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ── Modal de confirmação ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: #000a; backdrop-filter: blur(2px);
+  display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+}
+.modal-backdrop.open { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 14px;
+  padding: 1.4rem 1.5rem; width: 100%; max-width: 400px; box-shadow: 0 20px 60px #000a;
+}
+.modal-box h3 { font-size: 1.05rem; margin-bottom: .6rem; }
+.modal-box p { font-size: .86rem; color: var(--muted2); line-height: 1.5; }
+.modal-box p strong { color: var(--text); }
+.modal-error {
+  display: none; margin-top: .8rem; padding: .55rem .75rem; font-size: .8rem;
+  color: var(--error); background: #ef44441a; border: 1px solid #ef444444; border-radius: 8px;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.2rem; }
+.modal-btn {
+  border-radius: 8px; padding: .5rem 1.1rem; font-size: .82rem; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text);
+}
+.modal-btn:hover { border-color: var(--muted); }
+.modal-btn.danger { background: var(--error); border-color: var(--error); color: #fff; font-weight: 600; }
+.modal-btn.danger:hover { opacity: .88; }
+.modal-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Toast ── */
+.toast-wrap { position: fixed; bottom: 1.2rem; right: 1.2rem; display: flex; flex-direction: column; gap: .5rem; z-index: 1100; }
+.toast {
+  background: var(--surface2); border: 1px solid var(--border2); border-left: 3px solid var(--success);
+  border-radius: 8px; padding: .6rem .9rem; font-size: .82rem; box-shadow: 0 8px 24px #0009;
+  animation: toastIn .2s ease-out;
+}
+.toast.error { border-left-color: var(--error); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .chat-input-area {
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border);
@@ -504,6 +614,11 @@ body {
       <span>Conversas</span>
       <button onclick="novaConversa()" title="Nova conversa" style="background:none; border:none; color:var(--gold); cursor:pointer; font-size:.85rem;">+</button>
     </div>
+    <div class="conv-search">
+      <input type="text" id="convSearch" placeholder="Buscar conversas…" autocomplete="off"
+             oninput="onConvSearch(this.value)" onkeydown="if(event.key==='Escape') limparBuscaConversas()">
+      <button class="conv-search-clear" id="convSearchClear" onclick="limparBuscaConversas()" title="Limpar busca" style="display:none;">✕</button>
+    </div>
     <div id="convList" class="conv-list">
       <div class="conv-empty">Carregando...</div>
     </div>
@@ -663,6 +778,7 @@ body {
             <button class="btn-secondary" style="width:auto; padding:.4rem .9rem; font-size:.78rem;" onclick="novaConversa()">+ Nova conversa</button>
           </div>
         </div>
+        <div class="chat-scroll-wrap">
         <div class="chat-messages" id="chatMessages">
           <div class="msg-row">
             <div class="msg-avatar ia">☀</div>
@@ -673,6 +789,8 @@ body {
               <div class="msg-time">agora</div>
             </div>
           </div>
+        </div>
+        <button class="scroll-bottom-btn" id="scrollBottomBtn" onclick="scrollChatToBottom(true)" title="Ir para a última mensagem">↓</button>
         </div>
         <div style="padding: 0 1.5rem .75rem">
           <div class="suggestions" id="suggestions">
@@ -773,6 +891,19 @@ body {
 
   </div>
 </div>
+
+<div class="modal-backdrop" id="confirmModal" onclick="if(event.target===this) fecharModalExclusao()">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">Excluir conversa?</h3>
+    <p id="modalMsg"></p>
+    <div class="modal-error" id="modalError"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="modalCancel" onclick="fecharModalExclusao()">Cancelar</button>
+      <button class="modal-btn danger" id="modalConfirm" onclick="confirmarExclusao()">Excluir</button>
+    </div>
+  </div>
+</div>
+<div class="toast-wrap" id="toastWrap"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1350,8 +1481,12 @@ function resetProfileAlerts() {
 }
 
 function doLogout() {
+  abortarEnvioAtual();
   currentUser = null;
   currentConversaId = null;
+  convQuery = ''; convAll = [];
+  const cs = document.getElementById('convSearch'); if (cs) cs.value = '';
+  const cc = document.getElementById('convSearchClear'); if (cc) cc.style.display = 'none';
   localStorage.removeItem('helios_token');
   showScreen('login-screen');
   document.getElementById('convList').innerHTML = '<div class="conv-empty">Carregando...</div>';
@@ -1367,6 +1502,8 @@ function doLogout() {
 }
 
 function novaConversa() {
+  abortarEnvioAtual();
+  chatStick = true;
   currentConversaId = null;
 
   const btnChat = document.querySelectorAll('.nav-btn')[1];
@@ -1385,33 +1522,87 @@ function novaConversa() {
   document.getElementById('chatInput').focus();
 }
 
+// ───────── Busca / lista de conversas ─────────
+let convQuery = '';
+let convAll = [];        // lista completa (sem filtro) — usada para filtrar na hora, enquanto a busca no servidor não volta
+let convReqSeq = 0;      // descarta respostas antigas quando o usuário digita rápido
+let convSearchTimer = null;
+
+const normTxt = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const escRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function destacar(texto, q) {
+  const safe = escHtml(texto);
+  if (!q) return safe;
+  return safe.replace(new RegExp('(' + escRegex(escHtml(q)) + ')', 'ig'), '<mark>$1</mark>');
+}
+
+function renderConversas(conversas) {
+  const list = document.getElementById('convList');
+  if (!conversas.length) {
+    list.innerHTML = convQuery
+      ? `<div class="conv-empty">Nenhuma conversa encontrada para “${escHtml(convQuery)}”.</div>`
+      : '<div class="conv-empty">Nenhuma conversa ainda.</div>';
+    return;
+  }
+  list.innerHTML = conversas.map(c => `
+    <div class="conv-item ${c.id === currentConversaId ? 'active' : ''}" data-id="${c.id}" onclick="abrirConversa(${c.id})">
+      <span class="conv-title">${destacar(c.titulo || 'Conversa sem título', convQuery)}</span>
+      <button class="conv-del" onclick="event.stopPropagation(); apagarConversa(${c.id})" title="Excluir">✕</button>
+    </div>
+  `).join('');
+}
+
+function onConvSearch(value) {
+  convQuery = value.trim();
+  document.getElementById('convSearchClear').style.display = value ? 'block' : 'none';
+
+  // 1) filtro instantâneo pelo título, usando a lista que já temos
+  const q = normTxt(convQuery);
+  renderConversas(q ? convAll.filter(c => normTxt(c.titulo || 'Conversa sem título').includes(q)) : convAll);
+
+  // 2) após uma pausa na digitação, busca no servidor (também procura dentro das mensagens)
+  clearTimeout(convSearchTimer);
+  convSearchTimer = setTimeout(carregarListaConversas, convQuery ? 300 : 0);
+}
+
+function limparBuscaConversas() {
+  const input = document.getElementById('convSearch');
+  input.value = '';
+  onConvSearch('');
+}
+
 async function carregarListaConversas() {
   const usuario_id = currentUser?.id || currentUser?.usuario_id;
   const list = document.getElementById('convList');
   if (!usuario_id) { list.innerHTML = '<div class="conv-empty">Faça login para ver suas conversas.</div>'; return; }
 
+  const seq = ++convReqSeq;
+  const q = convQuery;
+
   try {
-    const r = await apiFetch(`/conversas?usuario_id=${usuario_id}`);
+    const r = await apiFetch(`/conversas?usuario_id=${encodeURIComponent(usuario_id)}` + (q ? `&q=${encodeURIComponent(q)}` : ''));
     const data = await r.json();
-    const conversas = data.data || [];
+    if (seq !== convReqSeq) return;           // chegou uma busca mais nova, ignora esta
+    if (!r.ok) throw new Error(data.message || 'Falha na API');
 
-    if (!conversas.length) {
-      list.innerHTML = '<div class="conv-empty">Nenhuma conversa ainda.</div>';
-      return;
+    let conversas = data.data || [];
+    if (!q) {
+      convAll = conversas;
+    } else if (data.q !== q) {
+      // backend ainda sem suporte a ?q= → filtra pelo título no navegador
+      const nq = normTxt(q);
+      conversas = conversas.filter(c => normTxt(c.titulo).includes(nq));
     }
-
-    list.innerHTML = conversas.map(c => `
-      <div class="conv-item ${c.id === currentConversaId ? 'active' : ''}" data-id="${c.id}" onclick="abrirConversa(${c.id})">
-        <span class="conv-title">${escHtml(c.titulo || 'Conversa sem título')}</span>
-        <button class="conv-del" onclick="event.stopPropagation(); apagarConversa(${c.id})" title="Excluir">✕</button>
-      </div>
-    `).join('');
+    renderConversas(conversas);
   } catch (e) {
-    list.innerHTML = '<div class="conv-empty">Erro ao carregar conversas.</div>';
+    if (seq === convReqSeq) list.innerHTML = '<div class="conv-empty">Erro ao carregar conversas.</div>';
   }
 }
 
 async function abrirConversa(conversaId) {
+  abortarEnvioAtual();
+  chatStick = true;
   currentConversaId = conversaId;
 
   const btnChat = document.querySelectorAll('.nav-btn')[1];
@@ -1444,22 +1635,86 @@ async function abrirConversa(conversaId) {
       appendMsg('user', row.pergunta_tecnica);
       appendMsg('ia', row.resposta_ia);
     });
+    scrollChatToBottom(true);
   } catch (e) {
     msgs.innerHTML = '<div class="conv-empty">Erro ao carregar mensagens.</div>';
   }
 }
 
-async function apagarConversa(conversaId) {
-  if (!confirm('Excluir essa conversa e todo o histórico dela?')) return;
+// ───────── Exclusão de conversa (modal de confirmação) ─────────
+let convParaExcluir = null;
+let excluindo = false;
+
+function apagarConversa(conversaId) {
+  convParaExcluir = conversaId;
+  const item = [...document.querySelectorAll('.conv-item')].find(el => Number(el.dataset.id) === conversaId);
+  const titulo = item?.querySelector('.conv-title')?.textContent?.trim() || `Conversa #${conversaId}`;
+  document.getElementById('modalMsg').innerHTML =
+    `A conversa <strong>${escHtml(titulo)}</strong> e todo o histórico dela serão excluídos permanentemente. Essa ação não pode ser desfeita.`;
+  const err = document.getElementById('modalError');
+  err.style.display = 'none'; err.textContent = '';
+  document.getElementById('confirmModal').classList.add('open');
+  document.getElementById('modalCancel').focus();
+}
+
+function fecharModalExclusao() {
+  if (excluindo) return;
+  document.getElementById('confirmModal').classList.remove('open');
+  convParaExcluir = null;
+}
+
+async function confirmarExclusao() {
+  if (excluindo || convParaExcluir == null) return;
+  const id = convParaExcluir;
+  const btn = document.getElementById('modalConfirm');
+  const err = document.getElementById('modalError');
+  excluindo = true;
+  btn.disabled = true; btn.textContent = 'Excluindo…';
+  document.getElementById('modalCancel').disabled = true;
+  err.style.display = 'none';
 
   try {
-    await apiFetch(`/conversas/${conversaId}`, { method: 'DELETE' });
-    if (currentConversaId === conversaId) novaConversa();
+    const r = await apiFetch(`/conversas/${id}`, { method: 'DELETE' });
+    const data = await r.json().catch(() => ({}));
+
+    if (r.status === 404) {
+      showToast('Essa conversa já não existe mais.', 'error');
+    } else if (!r.ok || data.success === false) {
+      throw new Error(data.message || `Erro ${r.status} ao excluir.`);
+    } else {
+      showToast('Conversa excluída.');
+    }
+
+    excluindo = false;
+    fecharModalExclusao();
+    if (currentConversaId === id) novaConversa();
     carregarListaConversas();
   } catch (e) {
-    alert('Erro ao excluir conversa.');
+    // mantém o modal aberto para o usuário tentar de novo
+    err.textContent = (e instanceof TypeError)
+      ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+      : (e.message || 'Não foi possível excluir a conversa.');
+    err.style.display = 'block';
+    btn.textContent = 'Tentar novamente';
+  } finally {
+    excluindo = false;
+    btn.disabled = false;
+    document.getElementById('modalCancel').disabled = false;
+    if (btn.textContent === 'Excluindo…') btn.textContent = 'Excluir';
   }
 }
+
+function showToast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'error' ? ' error' : '');
+  el.textContent = msg;
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('confirmModal').classList.contains('open')) fecharModalExclusao();
+});
 
 // ───────── Exportação da conversa (TXT / PDF) ─────────
 function limparTextoExport(t) {
@@ -1728,22 +1983,160 @@ function nowTime() {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-function appendMsg(role, text) {
+// ───────── Markdown (leve, sem dependências; tudo é escapado antes de virar HTML) ─────────
+function renderInlineMd(s) {
+  const codes = [];
+  s = s.replace(/`([^`\n]+)`/g, (m, c) => { codes.push(c); return '\u0000C' + (codes.length - 1) + '\u0000'; });
+  s = escHtml(s);
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)"']+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>')
+       .replace(/__([^_\n]+?)__/g, '<strong>$1</strong>')
+       .replace(/(^|[^*\w])\*([^*\s][^*\n]*?)\*(?!\*)/g, '$1<em>$2</em>')
+       .replace(/(^|[^_\w])_([^_\s][^_\n]*?)_(?![_\w])/g, '$1<em>$2</em>')
+       .replace(/~~([^~\n]+?)~~/g, '<del>$1</del>');
+  return s.replace(/\u0000C(\d+)\u0000/g, (m, i) => '<code>' + escHtml(codes[i]) + '</code>');
+}
+
+function renderMarkdown(src) {
+  let text = String(src ?? '').replace(/\r\n?/g, '\n');
+
+  // blocos de código (inclusive os ainda não fechados, para funcionar durante a animação)
+  const blocks = [];
+  text = text.replace(/```[ \t]*[\w+#.-]*[^\n]*\n?([\s\S]*?)(?:```|$)/g, (m, code) => {
+    blocks.push('<pre><code>' + escHtml(code.replace(/\n$/, '')) + '</code></pre>');
+    return '\n\u0000B' + (blocks.length - 1) + '\u0000\n';
+  });
+
+  const lines = text.split('\n');
+  const out = [];
+  let para = [], list = null;
+  const flushPara = () => { if (para.length) { out.push('<p>' + para.map(renderInlineMd).join('<br>') + '</p>'); para = []; } };
+  const flushList = () => {
+    if (list) {
+      out.push(`<${list.type}>` + list.items.map(i => '<li>' + renderInlineMd(i) + '</li>').join('') + `</${list.type}>`);
+      list = null;
+    }
+  };
+  const flushAll = () => { flushPara(); flushList(); };
+  const splitRow = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+  const isSep = l => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l || '');
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const line = raw.replace(/\s+$/, '');
+    let m;
+
+    if (!line.trim()) { flushPara(); continue; }   // linha em branco não quebra a lista (evita "1." reiniciando)
+
+    if ((m = line.match(/^\u0000B(\d+)\u0000$/))) { flushAll(); out.push(blocks[m[1]]); continue; }
+
+    if (line.trim().startsWith('|') && isSep(lines[i + 1]) && line.includes('|')) {
+      flushAll();
+      const head = splitRow(line);
+      let j = i + 2; const body = [];
+      while (j < lines.length && lines[j].trim().startsWith('|')) { body.push(splitRow(lines[j])); j++; }
+      out.push('<div class="md-table-wrap"><table><thead><tr>' + head.map(c => '<th>' + renderInlineMd(c) + '</th>').join('') +
+        '</tr></thead><tbody>' + body.map(r => '<tr>' + r.map(c => '<td>' + renderInlineMd(c) + '</td>').join('') + '</tr>').join('') +
+        '</tbody></table></div>');
+      i = j - 1; continue;
+    }
+
+    if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { flushAll(); out.push('<p class="md-h">' + renderInlineMd(m[2]) + '</p>'); continue; }
+    if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { flushAll(); out.push('<hr>'); continue; }
+    if ((m = line.match(/^>\s?(.*)$/))) { flushAll(); out.push('<blockquote>' + renderInlineMd(m[1]) + '</blockquote>'); continue; }
+
+    if ((m = line.match(/^\s*[-*+•]\s+(.*)$/))) {
+      flushPara();
+      if (!list || list.type !== 'ul') { flushList(); list = { type: 'ul', items: [] }; }
+      list.items.push(m[1]); continue;
+    }
+    if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) {
+      flushPara();
+      if (!list || list.type !== 'ol') { flushList(); list = { type: 'ol', items: [] }; }
+      list.items.push(m[1]); continue;
+    }
+    if (list && /^\s{2,}\S/.test(raw)) { list.items[list.items.length - 1] += ' ' + line.trim(); continue; }
+
+    flushList();
+    para.push(line);
+  }
+  flushAll();
+  return out.join('');
+}
+
+// ───────── Auto-scroll inteligente ─────────
+let chatStick = true;   // true = usuário está "colado" no fim → a tela acompanha a resposta
+const STICK_THRESHOLD = 80;
+
+function onChatScroll() {
+  const m = document.getElementById('chatMessages');
+  chatStick = (m.scrollHeight - m.scrollTop - m.clientHeight) < STICK_THRESHOLD;
+  document.getElementById('scrollBottomBtn').classList.toggle('show', !chatStick);
+}
+
+function scrollChatToBottom(force = false) {
+  const m = document.getElementById('chatMessages');
+  if (force) chatStick = true;
+  if (chatStick) m.scrollTop = m.scrollHeight;
+  document.getElementById('scrollBottomBtn').classList.toggle('show', !chatStick);
+}
+document.getElementById('chatMessages').addEventListener('scroll', onChatScroll, { passive: true });
+
+// ───────── Mensagens ─────────
+function appendMsg(role, text, opts = {}) {
   const msgs = document.getElementById('chatMessages');
   const isUser = role === 'user';
   const div = document.createElement('div');
   div.className = 'msg-row' + (isUser ? ' user' : '');
+
+  const cls = 'msg-bubble' + (isUser ? '' : ' md') + (opts.error ? ' msg-error' : '');
+  let body;
+  if (isUser) body = escHtml(text).replace(/\n/g, '<br>');
+  else if (opts.error) body = escHtml(text);
+  else body = opts.animate ? '' : renderMarkdown(text);
+
   div.innerHTML = `
     ${isUser ? '' : `<div class="msg-avatar ia">☀</div>`}
     <div>
-      <div class="msg-bubble">${escHtml(text).replace(/\n/g,'<br>')}</div>
+      <div class="${cls}">${body}</div>
       <div class="msg-time">${nowTime()}</div>
     </div>
     ${isUser ? `<div class="msg-avatar user-av">${getInitials()}</div>` : ''}
   `;
   msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
+  const bubble = div.querySelector('.msg-bubble');
+
+  if (opts.error && opts.retryText) {
+    const btn = document.createElement('button');
+    btn.className = 'msg-retry-btn';
+    btn.textContent = '↻ Tentar novamente';
+    btn.addEventListener('click', () => { if (isSending) return; div.remove(); sendChat(opts.retryText); });
+    bubble.appendChild(document.createElement('br'));
+    bubble.appendChild(btn);
+  }
+
+  if (opts.animate && !isUser) revealMarkdown(bubble, text);
+  else scrollChatToBottom(isUser);
+  return div;
 }
+
+// Revela a resposta aos poucos (a API devolve o texto inteiro de uma vez); a tela acompanha enquanto o usuário não rolar para cima.
+function revealMarkdown(bubble, fullText) {
+  const tokens = fullText.match(/\S+\s*/g) || [fullText];
+  if (tokens.length < 25) { bubble.innerHTML = renderMarkdown(fullText); scrollChatToBottom(); return; }
+  const perFrame = Math.max(1, Math.ceil(tokens.length / 150));   // ~2,5 s no total
+  let n = 0;
+  (function step() {
+    if (!bubble.isConnected) return;                // conversa trocada / limpa
+    n = Math.min(tokens.length, n + perFrame);
+    bubble.innerHTML = renderMarkdown(tokens.slice(0, n).join(''));
+    scrollChatToBottom();
+    if (n < tokens.length) requestAnimationFrame(step);
+  })();
+}
+
+// ───────── Indicador de "digitando" com feedback de espera ─────────
+let typingTimers = [];
 
 function appendTyping() {
   const msgs = document.getElementById('chatMessages');
@@ -1751,50 +2144,112 @@ function appendTyping() {
   div.className = 'msg-row'; div.id = 'typing-msg';
   div.innerHTML = `
     <div class="msg-avatar ia">☀</div>
-    <div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>
+    <div><div class="msg-bubble"><div class="typing-indicator">
+      <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      <span class="typing-label" id="typing-label">Helios está pensando…</span>
+    </div></div></div>
   `;
   msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
+  scrollChatToBottom();
+
+  const setLabel = (txt, slow) => {
+    const l = document.getElementById('typing-label');
+    if (l) { l.textContent = txt; l.classList.toggle('slow', !!slow); }
+  };
+  typingTimers = [
+    setTimeout(() => setLabel('Consultando a base técnica…'), 6000),
+    setTimeout(() => setLabel('Resposta longa em andamento, só mais um instante…'), 15000),
+    setTimeout(() => setLabel('Está demorando mais que o normal — o modelo de IA pode estar iniciando.', true), 30000),
+  ];
 }
 
 function removeTyping() {
+  typingTimers.forEach(clearTimeout); typingTimers = [];
   const t = document.getElementById('typing-msg');
   if (t) t.remove();
 }
 
-async function sendChat() {
+// ───────── Envio ─────────
+const CHAT_TIMEOUT_MS = 120000;
+let isSending = false;
+let chatAbort = null;
+
+function setSending(v) {
+  isSending = v;
+  const b = document.querySelector('.btn-send');
+  if (b) b.disabled = v;
+}
+
+function abortarEnvioAtual() {
+  if (chatAbort) { chatAbort.userAbort = true; chatAbort.abort(); }
+  removeTyping();
+}
+
+function mensagemErroChat(status, data) {
+  if ([408, 502, 503, 504].includes(status))
+    return 'A IA não conseguiu responder agora. O serviço (Ollama) pode estar iniciando o modelo ou sobrecarregado. Aguarde alguns segundos e tente novamente.';
+  if (status >= 500)
+    return 'Ocorreu um problema ao gerar a resposta. Tente novamente em instantes.';
+  return data?.message || 'Não consegui processar sua mensagem. Tente novamente.';
+}
+
+async function sendChat(textOverride) {
+  if (isSending) return;
   const input = document.getElementById('chatInput');
-  const text = input.value.trim();
+  const retry = typeof textOverride === 'string';
+  const text = retry ? textOverride : input.value.trim();
   if (!text) return;
 
-  input.value = ''; input.style.height = 'auto';
+  if (!retry) {
+    input.value = ''; input.style.height = 'auto';
+    appendMsg('user', text);          // força rolar até o fim
+  }
   document.getElementById('suggestions').style.display = 'none';
-  appendMsg('user', text);
+  scrollChatToBottom(true);
   appendTyping();
+  setSending(true);
+
+  const controller = new AbortController();
+  chatAbort = controller;
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, CHAT_TIMEOUT_MS);
 
   try {
     const resp = await apiFetch('/chat', {
       method: 'POST',
+      signal: controller.signal,
       body: JSON.stringify({
         pergunta: text,
         usuario_id: currentUser?.id || currentUser?.usuario_id || null,
         conversa_id: currentConversaId
       })
     });
+    const data = await resp.json().catch(() => ({}));
+    if (controller.userAbort) return;   // usuário trocou de conversa enquanto esperava
     removeTyping();
+
     if (resp.ok) {
-      const data = await resp.json();
       const isNova = !currentConversaId && data.conversa_id;
       if (data.conversa_id) currentConversaId = data.conversa_id;
-      appendMsg('ia', data.resposta || 'Sem resposta.');
+      appendMsg('ia', data.resposta || 'Sem resposta.', { animate: true });
       if (isNova) carregarListaConversas();
     } else {
-      const err = await resp.json().catch(() => ({}));
-      appendMsg('ia', err.message || 'Não consegui processar sua mensagem. Tente novamente.');
+      appendMsg('ia', mensagemErroChat(resp.status, data), { error: true, retryText: text });
     }
-  } catch(e) {
+  } catch (e) {
+    if (controller.userAbort) return;
     removeTyping();
-    appendMsg('ia', 'Erro de conexão com a API (localhost:8050). Verifique se o Docker está rodando.');
+    if (timedOut || e.name === 'AbortError') {
+      appendMsg('ia', 'A IA demorou demais para responder (mais de 2 minutos). O Ollama pode estar sobrecarregado ou carregando o modelo. Tente novamente em instantes.',
+        { error: true, retryText: text });
+    } else {
+      appendMsg('ia', 'Não consegui me conectar à API. Verifique sua conexão e se o servidor (Docker) está rodando.',
+        { error: true, retryText: text });
+    }
+  } finally {
+    clearTimeout(timer);
+    if (chatAbort === controller) chatAbort = null;
+    setSending(false);
   }
 }
 
