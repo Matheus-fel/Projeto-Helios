@@ -88,8 +88,25 @@ class UsuarioController extends Controller {
         if ($userId === 0) {
             $this->error('ID do usuario nao fornecido', 422);
         }
- 
-        unset($data['id'], $data['usuario_id'], $data['senha_hash']);
+
+        // Remove IDs, hashes e colunas virtuais do JOIN que não pertencem diretamente à tabela usuarios
+        unset(
+            $data['id'], 
+            $data['usuario_id'], 
+            $data['senha_hash'],
+            $data['empresa_nome'],
+            $data['empresa_cnpj'],
+            $data['empresa_codigo_acesso']
+        );
+
+        // Tratamento e higienização dos novos campos de dados pessoais
+        if (array_key_exists('telefone', $data)) {
+            $data['telefone'] = !empty($data['telefone']) ? trim((string)$data['telefone']) : null;
+        }
+
+        if (array_key_exists('cargo_funcao', $data)) {
+            $data['cargo_funcao'] = !empty($data['cargo_funcao']) ? trim((string)$data['cargo_funcao']) : null;
+        }
         
         // Validação do Nível de Acesso
         if (isset($data['nivel_acesso'])) {
