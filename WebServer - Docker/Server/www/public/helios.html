@@ -97,7 +97,7 @@ body {
 .auth-sub { color: var(--muted2); font-size: .85rem; text-align: center; margin-bottom: 1.75rem; }
 .form-group { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
 .form-group label { font-size: .78rem; color: var(--muted2); letter-spacing: .3px; }
-.form-group input, .form-group select {
+.form-group input, .form-group select, .form-group textarea {
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--r);
@@ -109,11 +109,11 @@ body {
   transition: border-color .15s, box-shadow .15s;
   width: 100%;
 }
-.form-group input:focus, .form-group select:focus {
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
   border-color: var(--gold);
   box-shadow: 0 0 0 3px #f5a62318;
 }
-.form-group input:disabled, .form-group select:disabled {
+.form-group input:disabled, .form-group select:disabled, .form-group textarea:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   background: #0f121a;
@@ -875,19 +875,50 @@ input[type="password"]::-ms-clear {
             <input type="text" id="prof-nivel" disabled style="opacity: 0.7; cursor: not-allowed;">
           </div>
 
+          <!-- Nome Completo (100% de largura) -->
           <div class="form-group">
             <label>Nome Completo</label>
             <input type="text" id="prof-nome" placeholder="Seu nome" disabled>
           </div>
 
+          <!-- Cargo / Função com Auto-Resize dinâmico -->
           <div class="form-group">
-            <label>E-mail</label>
-            <input type="email" id="prof-email" placeholder="seu@email.com" disabled>
+            <label>Cargo / Função</label>
+            <textarea id="prof-cargo" rows="1" placeholder="Ex: Engenheiro Solar · Especialista em Inversores e Sistemas Fotovoltaicos..." disabled maxlength="500" oninput="autoResizeCargo(this)" style="resize: none; overflow: hidden; min-height: 40px; line-height: 1.4;"></textarea>
           </div>
 
-          <div class="form-group" id="prof-group-empresa">
-            <label>Empresa Vinculada (ID)</label>
-            <input type="text" id="prof-empresa" placeholder="Não vinculada" disabled style="opacity: 0.7; cursor: not-allowed;">
+          <!-- E-mail e Telefone mantidos em 2 colunas lado a lado -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>E-mail</label>
+              <input type="email" id="prof-email" placeholder="seu@email.com" disabled>
+            </div>
+            <div class="form-group">
+              <label>Telefone / WhatsApp</label>
+              <input type="text" id="prof-telefone" placeholder="(00) 00000-0000" disabled oninput="mascaraTelefone(this)" maxlength="15">
+            </div>
+          </div>
+
+          <!-- Card Visual da Empresa Vinculada -->
+          <div id="prof-corp-card" style="margin-top: 1.25rem; padding: 1.25rem; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;">
+            <div style="display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem;">
+              <span style="font-size: 1.1rem;">🏢</span>
+              <h4 style="font-family:'Syne',sans-serif; font-size: .95rem; color: var(--gold);">Empresa Vinculada</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: .83rem;">
+              <div>
+                <div style="color: var(--muted); font-size: .72rem; margin-bottom: 2px;">Razão / Nome Comercial</div>
+                <div id="corp-nome" style="font-weight: 500; color: var(--text);">—</div>
+              </div>
+              <div>
+                <div style="color: var(--muted); font-size: .72rem; margin-bottom: 2px;">CNPJ</div>
+                <div id="corp-cnpj" style="font-weight: 500; color: var(--text);">—</div>
+              </div>
+            </div>
+            <div id="corp-codigo-wrap" style="margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--border); display: none;">
+              <div style="color: var(--muted); font-size: .72rem; margin-bottom: 2px;">Código de Acesso para Convite de Equipe</div>
+              <code id="corp-codigo" style="font-family: monospace; color: var(--gold); font-size: .88rem; font-weight: 600;">—</code>
+            </div>
           </div>
 
           <div style="display: flex; gap: .75rem; margin-top: 1.5rem;">
@@ -1134,7 +1165,6 @@ function enterApp(user) {
   const badgeRole = document.getElementById('prof-badge-role');
   badgeRole.textContent = role.toUpperCase();
   
-  // Estilização dinâmica da Badge de Cargo
   if (role === 'admin') {
     badgeRole.style.cssText = 'font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:12px; background:#f5a62322; color:var(--gold); border:1px solid #f5a62344;';
   } else if (role === 'gerente') {
@@ -1146,38 +1176,54 @@ function enterApp(user) {
   document.getElementById('prof-nivel').value = capitalize(role);
   document.getElementById('prof-nome').value = user.nome || '';
   document.getElementById('prof-email').value = user.email || '';
-  if (role === 'admin') {
-    document.getElementById('prof-empresa').value = 'Acesso Global (Administrador)';
-  } else if (user.empresa_id) {
-    document.getElementById('prof-empresa').value = `Empresa ID #${user.empresa_id}`;
-  } else {
-    document.getElementById('prof-empresa').value = 'Nenhuma empresa vinculada';
+  document.getElementById('prof-cargo').value = user.cargo_funcao || '';
+  autoResizeCargo(); // ◄ Ajusta a altura na abertura da tela
+  document.getElementById('prof-telefone').value = user.telefone || '';
+
+  // Preenchimento do Card Corporativo da Empresa
+  const corpNome = document.getElementById('corp-nome');
+  const corpCnpj = document.getElementById('corp-cnpj');
+  const corpCodigoWrap = document.getElementById('corp-codigo-wrap');
+  const corpCodigo = document.getElementById('corp-codigo');
+
+  if (corpNome && corpCnpj) {
+    if (role === 'admin') {
+      corpNome.textContent = 'Acesso Global (Administrador)';
+      corpCnpj.textContent = 'Isento / Global';
+      if (corpCodigoWrap) corpCodigoWrap.style.display = 'none';
+    } else {
+      corpNome.textContent = user.empresa_nome || 'Nenhuma empresa vinculada';
+      corpCnpj.textContent = user.empresa_cnpj || '—';
+      
+      if ((role === 'gerente' || role === 'admin') && user.empresa_codigo_acesso && corpCodigoWrap && corpCodigo) {
+        corpCodigo.textContent = user.empresa_codigo_acesso;
+        corpCodigoWrap.style.display = 'block';
+      } else if (corpCodigoWrap) {
+        corpCodigoWrap.style.display = 'none';
+      }
+    }
   }
 
   // ─── LIBERAÇÃO E CARREGAMENTO DE TELAS BASEADO NO PERFIL ───
   document.getElementById('nav-admin-empresas').style.display = 'none';
   document.getElementById('nav-admin-lista-empresas').style.display = 'none';
-  document.getElementById('nav-admin-usuarios').style.display = 'none'; // ◄ NOVA LINHA
+  document.getElementById('nav-admin-usuarios').style.display = 'none';
   document.getElementById('nav-gerente-equipe').style.display = 'none';
-  document.getElementById('prof-group-empresa').style.display = 'block';
 
   if (role === 'admin') {
     document.getElementById('nav-admin-empresas').style.display = 'flex';
     document.getElementById('nav-admin-lista-empresas').style.display = 'flex';
-    document.getElementById('nav-admin-usuarios').style.display = 'flex'; // ◄ NOVA LINHA
-    document.getElementById('prof-group-empresa').style.display = 'block';
+    document.getElementById('nav-admin-usuarios').style.display = 'flex';
     loadListaEmpresas();
-    loadUsuariosAdmin(); // ◄ NOVA LINHA
+    loadUsuariosAdmin();
   } else if (role === 'gerente') {
     document.getElementById('nav-gerente-equipe').style.display = 'flex';
     loadEquipeGerente();
-  } else if (role === 'operador') {
-
   }
 
   showScreen('app-screen');
   const firstNavBtn = document.querySelector('.nav-btn');
-  navTo('dash', firstNavBtn); // ◄ Garante que todo novo login sempre inicie no Dashboard
+  navTo('dash', firstNavBtn);
   loadDashStats();
   checkDbApp();
 }
@@ -1375,11 +1421,12 @@ function truncar(texto, max = 80) {
 function toggleEditProfile() {
   isEditingProfile = !isEditingProfile;
   
-  // Apenas Nome e E-mail podem ser editados pelo usuário
-  const inputs = ['prof-nome', 'prof-email'];
+  // Liberamos Nome, E-mail, Cargo e Telefone para edição
+  const inputs = ['prof-nome', 'prof-email', 'prof-cargo', 'prof-telefone'];
   
   inputs.forEach(id => {
-    document.getElementById(id).disabled = !isEditingProfile;
+    const el = document.getElementById(id);
+    if (el) el.disabled = !isEditingProfile;
   });
 
   const btnEdit = document.getElementById('btn-edit');
@@ -1392,10 +1439,12 @@ function toggleEditProfile() {
     btnEdit.textContent = 'Editar Dados';
     btnSave.style.display = 'none';
     
-    // 💡 Aplica o capitalize() para manter sempre 'Admin', 'Gerente' ou 'Operador'
     document.getElementById('prof-nivel').value = capitalize(currentUser.nivel_acesso || 'operador');
     document.getElementById('prof-nome').value = currentUser.nome || '';
     document.getElementById('prof-email').value = currentUser.email || '';
+    document.getElementById('prof-cargo').value = currentUser.cargo_funcao || '';
+    autoResizeCargo(); // ◄ Reajusta a altura caso o usuário tenha apagado/digitado algo e cancelado
+    document.getElementById('prof-telefone').value = currentUser.telefone || '';
     hideError('profile-error');
   }
 }
@@ -1404,6 +1453,8 @@ async function saveProfileChanges() {
   hideError('profile-error');
   const nome = document.getElementById('prof-nome').value.trim();
   const email = document.getElementById('prof-email').value.trim();
+  const cargo_funcao = document.getElementById('prof-cargo').value.trim();
+  const telefone = document.getElementById('prof-telefone').value.trim();
 
   if (!nome || !email) {
     showError('profile-error', 'Nome e E-mail são obrigatórios.');
@@ -1417,6 +1468,8 @@ async function saveProfileChanges() {
       id: idUsuario,
       nome,
       email,
+      cargo_funcao,
+      telefone,
       nivel_acesso: currentUser.nivel_acesso,
       empresa_id: currentUser.empresa_id || 0
     };
@@ -1432,6 +1485,9 @@ async function saveProfileChanges() {
       // 1. Atualiza os dados do objeto em memória
       currentUser.nome = nome;
       currentUser.email = email;
+      currentUser.cargo_funcao = cargo_funcao;
+      autoResizeCargo(); // ◄ Ajusta a altura após salvar;
+      currentUser.telefone = telefone;
 
       // 2. Atualiza elementos visuais sem mudar de tela
       const iniciais = nome.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -1445,7 +1501,7 @@ async function saveProfileChanges() {
 
       // 3. Fecha o modo de edição e exibe o alerta verde na própria tela
       toggleEditProfile();
-      showSuccess('profile-success', 'Dados atualizados com sucesso!');
+      showSuccess('profile-success', 'Perfil atualizado com sucesso!');
     } else {
       showError('profile-error', resData.message || 'Erro ao salvar alterações.');
     }
@@ -2377,6 +2433,28 @@ async function excluirFuncionario(id, nome) {
   } catch (e) {
     alert('Erro de comunicação com o servidor.');
   }
+}
+
+function mascaraTelefone(input) {
+  let v = input.value.replace(/\D/g, '');
+  if (v.length > 11) v = v.slice(0, 11);
+  if (v.length > 10) {
+    v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+  } else if (v.length > 6) {
+    v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+  } else if (v.length > 2) {
+    v = v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+  } else if (v.length > 0) {
+    v = v.replace(/^(\d*)$/, '($1');
+  }
+  input.value = v;
+}
+
+function autoResizeCargo(el) {
+  const target = el || document.getElementById('prof-cargo');
+  if (!target) return;
+  target.style.height = 'auto';
+  target.style.height = Math.max(40, target.scrollHeight) + 'px';
 }
 </script>
 </body>

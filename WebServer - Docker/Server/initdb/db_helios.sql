@@ -27,6 +27,8 @@ CREATE TABLE `usuarios` (
   `empresa_id` int DEFAULT NULL,
   `nome` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `cargo_funcao` varchar(500) DEFAULT NULL,
   `senha_hash` text NOT NULL,
   `nivel_acesso` enum('admin','gerente','operador') NOT NULL DEFAULT 'operador'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
