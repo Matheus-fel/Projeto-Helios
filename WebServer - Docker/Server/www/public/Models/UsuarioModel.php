@@ -5,8 +5,43 @@ require_once __DIR__ . '/Model.php';
 class UsuarioModel extends Model {
     protected string $table = 'usuarios';
 
+    /** Sobrescreve a busca geral para incluir dados da empresa vinculada */
+    public function all(): array {
+        $sql = "SELECT u.*, 
+                       e.nome_comercial AS empresa_nome, 
+                       e.cnpj AS empresa_cnpj, 
+                       e.codigo_acesso AS empresa_codigo_acesso
+                FROM usuarios u
+                LEFT JOIN empresas e ON u.empresa_id = e.id
+                ORDER BY u.id DESC";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    /** Sobrescreve a busca por ID para incluir dados da empresa vinculada */
+    public function find(int $id): array|false {
+        $sql = "SELECT u.*, 
+                       e.nome_comercial AS empresa_nome, 
+                       e.cnpj AS empresa_cnpj, 
+                       e.codigo_acesso AS empresa_codigo_acesso
+                FROM usuarios u
+                LEFT JOIN empresas e ON u.empresa_id = e.id
+                WHERE u.id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+
+    /** Busca usuário por e-mail com dados da empresa vinculada */
     public function findByEmail(string $email): array|false {
-        $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE email = ?");
+        $sql = "SELECT u.*, 
+                       e.nome_comercial AS empresa_nome, 
+                       e.cnpj AS empresa_cnpj, 
+                       e.codigo_acesso AS empresa_codigo_acesso
+                FROM usuarios u
+                LEFT JOIN empresas e ON u.empresa_id = e.id
+                WHERE u.email = ?";
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$email]);
         return $stmt->fetch();
     }
