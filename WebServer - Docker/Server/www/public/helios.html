@@ -719,13 +719,44 @@ input[type="password"]::-ms-clear {
           <div class="error-msg" id="emp-error"></div>
           <div class="success-msg" id="emp-success"></div>
           
-          <div class="form-group">
-            <label>Nome Comercial da Empresa</label>
-            <input type="text" id="emp-nome" placeholder="Ex: SolarTech Distribuidora LTDA">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nome Comercial *</label>
+              <input type="text" id="emp-nome" placeholder="Ex: SolarTech" maxlength="150">
+            </div>
+            <div class="form-group">
+              <label>Razão Social</label>
+              <input type="text" id="emp-razao" placeholder="Ex: SolarTech Distribuidora LTDA" maxlength="150">
+            </div>
           </div>
           <div class="form-group">
-            <label>CNPJ</label>
-            <input type="text" id="emp-cnpj" placeholder="00.000.000/0001-00">
+            <label>CNPJ *</label>
+            <input type="text" id="emp-cnpj" placeholder="00.000.000/0001-00" maxlength="18">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Telefone de Contato</label>
+              <input type="text" id="emp-telefone" placeholder="(62) 99999-9999" maxlength="20">
+            </div>
+            <div class="form-group">
+              <label>E-mail de Contato</label>
+              <input type="email" id="emp-email" placeholder="contato@empresa.com" maxlength="120">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cidade</label>
+              <input type="text" id="emp-cidade" placeholder="Ex: Goiânia" maxlength="80">
+            </div>
+            <div class="form-group">
+              <label>UF</label>
+              <input type="text" id="emp-uf" placeholder="GO" maxlength="2" style="text-transform:uppercase;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Código de Acesso (opcional)</label>
+            <input type="text" id="emp-codigo" placeholder="Ex: SOLAR-TECH-2026" maxlength="50" style="text-transform:uppercase;">
+            <span style="font-size:.72rem; color:var(--muted);">Deixe em branco para gerar automaticamente. Use apenas letras, números e hífen.</span>
           </div>
           <button class="btn-main" id="btn-save-empresa" onclick="saveNovaEmpresa()">Registrar Empresa</button>
         </div>
@@ -741,14 +772,16 @@ input[type="password"]::-ms-clear {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Nome Comercial</th>
+                <th>Empresa</th>
                 <th>CNPJ</th>
-                <th>Código de Acesso</th>
+                <th>Cidade/UF</th>
+                <th>Contato</th>
+                <th>Código de Convite</th>
                 <th>Data de Adesão</th>
               </tr>
             </thead>
             <tbody id="table-empresas-body">
-              <tr><td colspan="5" style="text-align:center; color:var(--muted);">Carregando empresas...</td></tr>
+              <tr><td colspan="7" style="text-align:center; color:var(--muted);">Carregando empresas...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1228,14 +1261,38 @@ function enterApp(user) {
   checkDbApp();
 }
 
-/* ─── CÓDIGO DA NOVA REGRA: ADMIN CADASTRAR EMPRESAS ─── */
+/* ─── ADMIN: CADASTRAR EMPRESA (CADASTRO CORPORATIVO COMPLETO) ─── */
+const EMP_FIELDS = {
+  nome_comercial: 'emp-nome',
+  razao_social:   'emp-razao',
+  cnpj:           'emp-cnpj',
+  telefone:       'emp-telefone',
+  email_contato:  'emp-email',
+  cidade:         'emp-cidade',
+  uf:             'emp-uf',
+  codigo_acesso:  'emp-codigo'
+};
+
 async function saveNovaEmpresa() {
   hideError('emp-error');
-  const nome_comercial = document.getElementById('emp-nome').value.trim();
-  const cnpj = document.getElementById('emp-cnpj').value.trim();
 
-  if(!nome_comercial || !cnpj) {
+  const payload = {};
+  for (const [campo, id] of Object.entries(EMP_FIELDS)) {
+    payload[campo] = document.getElementById(id).value.trim();
+  }
+  payload.uf = payload.uf.toUpperCase();
+  payload.codigo_acesso = payload.codigo_acesso.toUpperCase();
+
+  if (!payload.nome_comercial || !payload.cnpj) {
     showError('emp-error', 'Preencha o Nome Comercial e o CNPJ da Empresa.');
+    return;
+  }
+  if (payload.uf && !/^[A-Z]{2}$/.test(payload.uf)) {
+    showError('emp-error', 'UF inválida. Use a sigla com 2 letras (ex: GO).');
+    return;
+  }
+  if (payload.codigo_acesso && !/^[A-Z0-9-]{4,50}$/.test(payload.codigo_acesso)) {
+    showError('emp-error', 'Código de Acesso inválido. Use de 4 a 50 caracteres: letras, números e hífen.');
     return;
   }
 
@@ -1243,13 +1300,13 @@ async function saveNovaEmpresa() {
   try {
     const r = await apiFetch('/empresas', {
       method: 'POST',
-      body: JSON.stringify({ nome_comercial, cnpj })
+      body: JSON.stringify(payload)
     });
     const data = await r.json();
-    if(r.ok) {
-      showSuccess('emp-success', 'Empresa registrada com sucesso no ecossistema!');
-      document.getElementById('emp-nome').value = '';
-      document.getElementById('emp-cnpj').value = '';
+    if (r.ok) {
+      const codigo = data.data && data.data.codigo_acesso ? data.data.codigo_acesso : '';
+      showSuccess('emp-success', 'Empresa registrada com sucesso!' + (codigo ? ' Código de acesso: ' + codigo : ''));
+      Object.values(EMP_FIELDS).forEach(id => { document.getElementById(id).value = ''; });
       loadDashStats();
       loadListaEmpresas();
     } else {
@@ -1265,6 +1322,7 @@ async function saveNovaEmpresa() {
 /* ─── ADMIN: LISTAR EMPRESAS CADASTRADAS ─── */
 async function loadListaEmpresas() {
   const tbody = document.getElementById('table-empresas-body');
+  const COLS = 7;
   try {
     const r = await apiFetch('/empresas');
     const resData = await r.json();
@@ -1272,23 +1330,33 @@ async function loadListaEmpresas() {
 
     if (r.ok && Array.isArray(empresas)) {
       if (empresas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted);">Nenhuma empresa cadastrada ainda.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${COLS}" style="text-align:center; color:var(--muted);">Nenhuma empresa cadastrada ainda.</td></tr>`;
         return;
       }
-      tbody.innerHTML = empresas.map(e => `
+      tbody.innerHTML = empresas.map(e => {
+        const local = [e.cidade, e.uf].filter(Boolean).map(escHtml).join(' / ') || '—';
+        const razao = e.razao_social
+          ? `<div style="color:var(--muted2); font-size:0.74rem;">${escHtml(e.razao_social)}</div>` : '';
+        const contato = [
+          e.telefone ? escHtml(e.telefone) : '',
+          e.email_contato ? `<span style="color:var(--muted2); font-size:0.74rem;">${escHtml(e.email_contato)}</span>` : ''
+        ].filter(Boolean).join('<br>') || '—';
+        return `
         <tr>
           <td>${e.id}</td>
-          <td>${e.nome_comercial}</td>
-          <td>${e.cnpj}</td>
-          <td><code>${e.codigo_acesso || '—'}</code></td>
+          <td>${escHtml(e.nome_comercial)}${razao}</td>
+          <td>${escHtml(e.cnpj)}</td>
+          <td>${local}</td>
+          <td>${contato}</td>
+          <td><code>${escHtml(e.codigo_acesso || '—')}</code></td>
           <td style="color:var(--muted2); font-size:0.78rem;">${e.data_adesao ? new Date(e.data_adesao).toLocaleString('pt-BR') : '—'}</td>
-        </tr>
-      `).join('');
+        </tr>`;
+      }).join('');
     } else {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">Erro ao carregar empresas.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${COLS}" style="text-align:center; color:var(--error);">Erro ao carregar empresas.</td></tr>`;
     }
   } catch {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${COLS}" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
   }
 }
 
