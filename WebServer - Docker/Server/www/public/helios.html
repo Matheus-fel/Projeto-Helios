@@ -818,21 +818,28 @@ input[type="password"]::-ms-clear {
 
     <div class="page" id="page-gerente-equipe">
       <div class="dash-content">
-        <h2 style="font-family:'Syne',sans-serif; color:var(--blue);">Gestão de Equipe</h2>
-        <p style="font-size:0.83rem; color:var(--muted2); margin-bottom:1rem;">Visualizando gerentes e operadores vinculados ao mesmo ID de Empresa.</p>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+          <div>
+            <h2 style="font-family:'Syne',sans-serif; color:var(--blue);">Gestão de Equipe</h2>
+            <p style="font-size:0.83rem; color:var(--muted2); margin-top: .2rem;">Cadastre colaboradores e gerencie os cargos vinculados à sua empresa.</p>
+          </div>
+          <button class="btn-main" style="width: auto; margin-top: 0; padding: .6rem 1.1rem;" onclick="abrirModalNovoColaborador()">+ Novo Colaborador</button>
+        </div>
+
         <div style="overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;">
           <table class="helios-table">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Nome</th>
                 <th>E-mail</th>
+                <th>Telefone</th>
+                <th>Cargo / Função</th>
                 <th>Nível de Acesso</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody id="table-equipe-body">
-              <tr><td colspan="4" style="text-align:center; color:var(--muted);">Carregando integrantes da equipe...</td></tr>
+              <tr><td colspan="6" style="text-align:center; color:var(--muted);">Carregando integrantes da equipe...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1028,6 +1035,54 @@ input[type="password"]::-ms-clear {
     </div>
   </div>
 </div>
+<!-- Modal de Onboarding Direto de Colaborador (Gerente) -->
+<div class="modal-backdrop" id="novoColaboradorModal" onclick="if(event.target===this) fecharModalNovoColaborador()">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="novoColabTitle" style="max-width: 460px;">
+    <h3 id="novoColabTitle" style="font-family:'Syne',sans-serif; color:var(--gold); margin-bottom:.25rem;">Novo Colaborador</h3>
+    <p style="margin-bottom: 1rem;">O colaborador será cadastrado como <strong>Operador</strong> e vinculado automaticamente à sua empresa.</p>
+
+    <div class="error-msg" id="colab-error"></div>
+
+    <div class="form-group">
+      <label>Nome Completo *</label>
+      <input type="text" id="colab-nome" placeholder="Ex: Ana Souza" maxlength="100">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>E-mail *</label>
+        <input type="email" id="colab-email" placeholder="ana@empresa.com" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label>Telefone</label>
+        <input type="text" id="colab-telefone" placeholder="(00) 00000-0000" maxlength="15" oninput="mascaraTelefone(this)">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Cargo / Função</label>
+      <textarea id="colab-cargo" rows="2" placeholder="Ex: Técnico em Energia Solar · Instalação e Manutenção" maxlength="500" style="resize: vertical; min-height: 54px;"></textarea>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 0;">
+      <label>Senha Inicial *</label>
+      <div class="pass-input-wrap">
+        <input type="password" id="colab-senha" placeholder="Mínimo 6 caracteres">
+        <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('colab-senha', this)" title="Alternar visibilidade">
+          <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-btn" id="btn-cancel-colab" onclick="fecharModalNovoColaborador()">Cancelar</button>
+      <button class="btn-main" id="btn-save-colab" onclick="salvarNovoColaborador()" style="width: auto; margin-top: 0; padding: .5rem 1.2rem;">Cadastrar</button>
+    </div>
+  </div>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1152,6 +1207,7 @@ async function doRegister() {
     return;
   }
 
+  localStorage.removeItem('helios_token'); // Garante que nenhum token antigo seja enviado no auto-registro
   setLoading('btn-register', true, 'Criar conta');
   try {
     const body = { nome, email, senha, codigo_acesso };
@@ -1163,6 +1219,9 @@ async function doRegister() {
     const data = await r.json();
     if (r.ok) {
       currentUser = data.data || data.usuario || data;
+      if (currentUser.token) {
+        localStorage.setItem('helios_token', currentUser.token);
+      }
       enterApp(currentUser);
     } else {
       showError('reg-error', data.message || 'Erro ao criar conta. Verifique os dados.');
@@ -1438,44 +1497,207 @@ async function alterarNivelUsuario(userId) {
   }
 }
 
-/* ─── CÓDIGO ALTERADO: GESTOR LISTAR E EXCLUIR OPERADORES DA MESMA EMPRESA ─── */
+/* ─── GESTOR: LISTAR EQUIPE, CADASTRAR COLABORADORES E EDITAR CARGO INLINE ─── */
+let equipeCache = [];
+
 async function loadEquipeGerente() {
   const tbody = document.getElementById('table-equipe-body');
+  const COLS = 6;
   try {
     const r = await apiFetch('/usuarios');
-    const resData = await r.json(); // Mudamos o nome aqui para não confundir
+    const resData = await r.json();
     
     // Verificamos se a requisição deu OK e se o 'resData.data' é a nossa Array de usuários
-    if(r.ok && resData && Array.isArray(resData.data)) {
-      
-      // Ajustado para ler 'resData.data.filter' ao invés de 'data.filter'
+    if (r.ok && resData && Array.isArray(resData.data)) {
       const equipe = resData.data.filter(u => u.empresa_id == currentUser.empresa_id && u.nivel_acesso !== 'admin');
+      equipeCache = equipe;
       
-      if(equipe.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted);">Nenhum colaborador vinculado a sua empresa ainda.</td></tr>`;
+      if (equipe.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${COLS}" style="text-align:center; color:var(--muted);">Nenhum colaborador vinculado a sua empresa ainda.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = equipe.map(u => `
+      const currentUserId = currentUser.id || currentUser.usuario_id;
+
+      tbody.innerHTML = equipe.map(u => {
+        const isSelf = u.id === currentUserId;
+        const cargoAtual = u.cargo_funcao
+          ? escHtml(u.cargo_funcao)
+          : '<span style="color:var(--muted); font-style:italic;">Não definido</span>';
+        const telefoneAtual = u.telefone
+          ? escHtml(u.telefone)
+          : '<span style="color:var(--muted);">—</span>';
+
+        return `
         <tr>
-          <td>${u.id}</td>
-          <td>${u.nome}</td>
-          <td>${u.email}</td>
-          <td><span style="color:${u.nivel_acesso === 'gerente'?'var(--blue)':'var(--success)'}">${capitalize(u.nivel_acesso)}</span></td>
+          <td>${escHtml(u.nome)}</td>
+          <td>${escHtml(u.email)}</td>
+          <td style="white-space: nowrap;">${telefoneAtual}</td>
+          <td id="cargo-cell-${u.id}" style="max-width: 310px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:.38rem .6rem;">
+              <span style="word-break: break-word; line-height: 1.35;">${cargoAtual}</span>
+              <button type="button" class="btn-secondary" onclick="iniciarEdicaoCargoEquipe(${u.id})"
+                      title="Editar Cargo / Função"
+                      style="width:auto; padding:.22rem .55rem; font-size:.72rem; flex-shrink:0;">
+                ✎ Editar
+              </button>
+            </div>
+          </td>
+          <td><span style="color:${u.nivel_acesso === 'gerente' ? 'var(--blue)' : 'var(--success)'}">${capitalize(u.nivel_acesso)}</span></td>
           <td>
-            ${u.id === (currentUser.id || currentUser.usuario_id) ? 
+            ${isSelf ? 
               `<span style="color:var(--muted); font-size:.8rem;">(Você)</span>` : 
-              `<button class="btn-main" style="margin-top:0; padding:.3rem .6rem; font-size:.75rem; background:var(--error); color:#fff;" onclick="excluirFuncionario(${u.id}, '${u.nome}')">Excluir</button>`
+              `<button class="btn-main" style="margin-top:0; padding:.3rem .6rem; font-size:.75rem; background:var(--error); color:#fff; width:auto;" onclick="excluirFuncionario(${u.id})">Excluir</button>`
             }
           </td>
-        </tr>
-      `).join('');
+        </tr>`;
+      }).join('');
     } else {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">Erro ao carregar dados da API.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${COLS}" style="text-align:center; color:var(--error);">Erro ao carregar dados da API.</td></tr>`;
     }
   } catch (err) {
-    console.error("Erro no front-end:", err);  // Boa prática para debugar no console
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
+    console.error("Erro no front-end:", err); // Boa prática para debugar no console
+    tbody.innerHTML = `<tr><td colspan="${COLS}" style="text-align:center; color:var(--error);">API indisponível no momento.</td></tr>`;
+  }
+}
+
+/* Ativa a edição direta do campo Cargo / Função mantendo o mesmo estilo visual */
+function iniciarEdicaoCargoEquipe(userId) {
+  const membro = equipeCache.find(u => u.id === userId);
+  const cell = document.getElementById(`cargo-cell-${userId}`);
+  if (!membro || !cell) return;
+
+  cell.innerHTML = `
+    <div style="display:flex; align-items:flex-start; gap:.5rem; background:var(--surface2); border:1px solid var(--gold); border-radius:8px; padding:.38rem .6rem;">
+      <textarea id="input-cargo-equipe-${userId}" rows="1"
+                placeholder="Ex: Técnico Solar" maxlength="500"
+                oninput="autoResizeCargo(this)"
+                style="background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:.85rem; line-height:1.35; resize:none; overflow:hidden; padding:0; flex:1; min-width:170px;"
+                onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); salvarCargoEquipe(${userId}); } else if(event.key==='Escape'){ loadEquipeGerente(); }">${escHtml(membro.cargo_funcao || '')}</textarea>
+      <div style="display:flex; gap:.3rem; flex-shrink:0;">
+        <button type="button" class="btn-main" id="btn-save-cargo-${userId}" onclick="salvarCargoEquipe(${userId})"
+                style="margin-top:0; padding:.25rem .6rem; font-size:.73rem; width:auto;">Salvar</button>
+        <button type="button" class="modal-btn" onclick="loadEquipeGerente()" title="Cancelar"
+                style="padding:.22rem .45rem; font-size:.73rem;">✕</button>
+      </div>
+    </div>
+  `;
+
+  const textarea = document.getElementById(`input-cargo-equipe-${userId}`);
+  if (textarea) {
+    autoResizeCargo(textarea);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }
+}
+
+/* Salva o Cargo / Função editado diretamente na tabela */
+async function salvarCargoEquipe(userId) {
+  const input = document.getElementById(`input-cargo-equipe-${userId}`);
+  const btn   = document.getElementById(`btn-save-cargo-${userId}`);
+  if (!input) return;
+
+  const novoCargo = input.value.trim();
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const r = await apiFetch('/usuarios', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: userId,
+        cargo_funcao: novoCargo
+      })
+    });
+    const resData = await r.json();
+
+    if (r.ok) {
+      // Se o gerente editou o próprio cargo na tabela, sincroniza também no estado local do perfil
+      if (userId === (currentUser.id || currentUser.usuario_id)) {
+        currentUser.cargo_funcao = novoCargo;
+        const profCargo = document.getElementById('prof-cargo');
+        if (profCargo) {
+          profCargo.value = novoCargo;
+          autoResizeCargo();
+        }
+      }
+      showToast('Cargo atualizado com sucesso!');
+      await loadEquipeGerente();
+    } else {
+      showToast(resData.message || 'Erro ao atualizar cargo.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+    }
+  } catch {
+    showToast('Erro de comunicação com o servidor.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+  }
+}
+
+/* Abre e limpa o modal de cadastro direto de colaborador */
+function abrirModalNovoColaborador() {
+  hideError('colab-error');
+  document.getElementById('colab-nome').value     = '';
+  document.getElementById('colab-email').value    = '';
+  document.getElementById('colab-telefone').value = '';
+  document.getElementById('colab-cargo').value    = '';
+
+  const senhaInput = document.getElementById('colab-senha');
+  senhaInput.value = '';
+  if (senhaInput.type === 'text') {
+    const btnEye = senhaInput.parentElement?.querySelector('.btn-toggle-pass');
+    if (btnEye) togglePassVisibility('colab-senha', btnEye);
+  }
+
+  document.getElementById('novoColaboradorModal').classList.add('open');
+  document.getElementById('colab-nome').focus();
+}
+
+function fecharModalNovoColaborador() {
+  document.getElementById('novoColaboradorModal').classList.remove('open');
+}
+
+/* Envia o cadastro direto do novo colaborador vinculado à empresa do Gerente */
+async function salvarNovoColaborador() {
+  hideError('colab-error');
+
+  const nome         = document.getElementById('colab-nome').value.trim();
+  const email        = document.getElementById('colab-email').value.trim();
+  const telefone     = document.getElementById('colab-telefone').value.trim();
+  const cargo_funcao = document.getElementById('colab-cargo').value.trim();
+  const senha        = document.getElementById('colab-senha').value;
+
+  if (!nome || !email || !senha) {
+    showError('colab-error', 'Preencha Nome Completo, E-mail e Senha Inicial.');
+    return;
+  }
+
+  if (senha.length < 6) {
+    showError('colab-error', 'A senha inicial deve ter no mínimo 6 caracteres.');
+    return;
+  }
+
+  setLoading('btn-save-colab', true, 'Cadastrar');
+  document.getElementById('btn-cancel-colab').disabled = true;
+
+  try {
+    const r = await apiFetch('/usuarios', {
+      method: 'POST',
+      body: JSON.stringify({ nome, email, telefone, cargo_funcao, senha })
+    });
+    const resData = await r.json();
+
+    if (r.ok) {
+      fecharModalNovoColaborador();
+      showToast('Colaborador cadastrado com sucesso!');
+      await loadEquipeGerente();
+      loadDashStats();
+    } else {
+      showError('colab-error', resData.message || 'Erro ao cadastrar colaborador.');
+    }
+  } catch {
+    showError('colab-error', 'Erro de comunicação com o servidor.');
+  } finally {
+    setLoading('btn-save-colab', false, 'Cadastrar');
+    document.getElementById('btn-cancel-colab').disabled = false;
   }
 }
 
@@ -1926,7 +2148,9 @@ function showToast(msg, type = 'success') {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('confirmModal').classList.contains('open')) fecharModalExclusao();
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('confirmModal')?.classList.contains('open')) fecharModalExclusao();
+  if (document.getElementById('novoColaboradorModal')?.classList.contains('open')) fecharModalNovoColaborador();
 });
 
 // ───────── Exportação da conversa (TXT / PDF) ─────────
@@ -2479,7 +2703,10 @@ document.getElementById('login-senha').addEventListener('keydown', e => { if(e.k
 document.getElementById('reg-senha2').addEventListener('keydown', e => { if(e.key==='Enter') doRegister(); });
 
 /* Função para o Gestor excluir um funcionário da equipe */
-async function excluirFuncionario(id, nome) {
+async function excluirFuncionario(id) {
+  const membro = equipeCache.find(u => u.id === id);
+  const nome = membro ? membro.nome : `#${id}`;
+
   if (!confirm(`Tem certeza que deseja remover o funcionário ${nome}?`)) {
     return;
   }
@@ -2493,13 +2720,13 @@ async function excluirFuncionario(id, nome) {
     const resData = await r.json();
 
     if (r.ok) {
-      alert('Funcionário removido com sucesso!');
+      showToast('Colaborador removido da equipe.');
       loadEquipeGerente(); // Recarrega a lista atualizada na tela
     } else {
-      alert(resData.message || 'Erro ao remover funcionário.');
+      showToast(resData.message || 'Erro ao remover funcionário.', 'error');
     }
   } catch (e) {
-    alert('Erro de comunicação com o servidor.');
+    showToast('Erro de comunicação com o servidor.', 'error');
   }
 }
 
