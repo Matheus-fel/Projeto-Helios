@@ -142,6 +142,14 @@ class EmpresaController extends Controller {
                 $d['cnpj'] = preg_replace('/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/', '$1.$2.$3/$4-$5', $dig);
             }
         }
+        if (!empty($d['telefone'])) {
+            $tel = preg_replace('/\D+/', '', $d['telefone']);
+            if (strlen($tel) === 11) {
+                $d['telefone'] = preg_replace('/(\d{2})(\d{5})(\d{4})/', '($1) $2-$3', $tel);
+            } elseif (strlen($tel) === 10) {
+                $d['telefone'] = preg_replace('/(\d{2})(\d{4})(\d{4})/', '($1) $2-$3', $tel);
+            }
+        }
         return $d;
     }
 
