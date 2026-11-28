@@ -205,6 +205,17 @@ body {
 .user-info { flex: 1; overflow: hidden; }
 .user-name { font-size: .82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-role { font-size: .7rem; color: var(--muted); }
+.user-cargo {
+  font-size: .68rem;
+  color: var(--gold2);
+  margin-top: 2px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
 .btn-logout {
   background: none; border: none; color: var(--muted); cursor: pointer;
   font-size: 1rem; padding: 4px; transition: color .15s;
@@ -666,6 +677,7 @@ input[type="password"]::-ms-clear {
         <div class="user-info">
           <div class="user-name" id="sidebar-name">—</div>
           <div class="user-role" id="sidebar-role">—</div>
+          <div class="user-cargo" id="sidebar-cargo" style="display:none;"></div>
         </div>
       </div>
       <button class="btn-logout" onclick="doLogout()" title="Sair">✕</button>
@@ -923,7 +935,7 @@ input[type="password"]::-ms-clear {
 
           <!-- Cargo / Função com Auto-Resize dinâmico -->
           <div class="form-group">
-            <label>Cargo / Função</label>
+            <label>Cargo / Função <span id="prof-cargo-lock-hint" style="font-size:.7rem; color:var(--muted); margin-left:.35rem; display:none;">(Definido pelo gestor da empresa)</span></label>
             <textarea id="prof-cargo" rows="1" placeholder="Ex: Engenheiro Solar · Especialista em Inversores e Sistemas Fotovoltaicos..." disabled maxlength="500" oninput="autoResizeCargo(this)" style="resize: none; overflow: hidden; min-height: 40px; line-height: 1.4;"></textarea>
           </div>
 
@@ -1265,12 +1277,27 @@ function enterApp(user) {
     badgeRole.style.cssText = 'font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:12px; background:#10b98122; color:var(--success); border:1px solid #10b98144;';
   }
 
+  // Garante que o formulário de perfil inicie bloqueado ao trocar de sessão
+  isEditingProfile = false;
+  ['prof-nome', 'prof-email', 'prof-cargo', 'prof-telefone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
+  const btnEditInit = document.getElementById('btn-edit');
+  const btnSaveInit = document.getElementById('btn-save-profile');
+  if (btnEditInit) btnEditInit.textContent = 'Editar Dados';
+  if (btnSaveInit) btnSaveInit.style.display = 'none';
+
+  const cargoLockHint = document.getElementById('prof-cargo-lock-hint');
+  if (cargoLockHint) {
+    cargoLockHint.style.display = role === 'operador' ? 'inline' : 'none';
+  }
+
   document.getElementById('prof-nivel').value = capitalize(role);
   document.getElementById('prof-nome').value = user.nome || '';
   document.getElementById('prof-email').value = user.email || '';
-  document.getElementById('prof-cargo').value = user.cargo_funcao || '';
-  autoResizeCargo(); // ◄ Ajusta a altura na abertura da tela
   document.getElementById('prof-telefone').value = user.telefone || '';
+  atualizarCargoUI(user.cargo_funcao || '');
 
   // Preenchimento do Card Corporativo da Empresa
   const corpNome = document.getElementById('corp-nome');
@@ -1344,6 +1371,10 @@ async function saveNovaEmpresa() {
 
   if (!payload.nome_comercial || !payload.cnpj) {
     showError('emp-error', 'Preencha o Nome Comercial e o CNPJ da Empresa.');
+    return;
+  }
+  if (payload.telefone && !validarTelefone(payload.telefone)) {
+    showError('emp-error', 'Telefone inválido. Informe DDD + número (10 ou 11 dígitos).');
     return;
   }
   if (payload.uf && !/^[A-Z]{2}$/.test(payload.uf)) {
@@ -1611,14 +1642,10 @@ async function salvarCargoEquipe(userId) {
     const resData = await r.json();
 
     if (r.ok) {
-      // Se o gerente editou o próprio cargo na tabela, sincroniza também no estado local do perfil
+      // Sincroniza no estado local, no Perfil e na Sidebar apenas após confirmar o salvamento
       if (userId === (currentUser.id || currentUser.usuario_id)) {
         currentUser.cargo_funcao = novoCargo;
-        const profCargo = document.getElementById('prof-cargo');
-        if (profCargo) {
-          profCargo.value = novoCargo;
-          autoResizeCargo();
-        }
+        atualizarCargoUI(novoCargo);
       }
       showToast('Cargo atualizado com sucesso!');
       await loadEquipeGerente();
@@ -1675,6 +1702,11 @@ async function salvarNovoColaborador() {
     return;
   }
 
+  if (telefone && !validarTelefone(telefone)) {
+    showError('colab-error', 'Telefone inválido. Informe DDD + número (10 ou 11 dígitos).');
+    return;
+  }
+
   setLoading('btn-save-colab', true, 'Cadastrar');
   document.getElementById('btn-cancel-colab').disabled = true;
 
@@ -1710,14 +1742,23 @@ function truncar(texto, max = 80) {
 
 function toggleEditProfile() {
   isEditingProfile = !isEditingProfile;
-  
-  // Liberamos Nome, E-mail, Cargo e Telefone para edição
-  const inputs = ['prof-nome', 'prof-email', 'prof-cargo', 'prof-telefone'];
+  const role = currentUser?.nivel_acesso || 'operador';
+
+  // Operadores não podem editar o campo Cargo / Função (governança hierárquica)
+  const inputs = role === 'operador'
+    ? ['prof-nome', 'prof-email', 'prof-telefone']
+    : ['prof-nome', 'prof-email', 'prof-cargo', 'prof-telefone'];
   
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = !isEditingProfile;
   });
+
+  // Garante explicitamente que prof-cargo permaneça bloqueado para operadores
+  const cargoEl = document.getElementById('prof-cargo');
+  if (cargoEl && role === 'operador') {
+    cargoEl.disabled = true;
+  }
 
   const btnEdit = document.getElementById('btn-edit');
   const btnSave = document.getElementById('btn-save-profile');
@@ -1725,6 +1766,7 @@ function toggleEditProfile() {
   if (isEditingProfile) {
     btnEdit.textContent = 'Cancelar';
     btnSave.style.display = 'block';
+    autoResizeCargo();
   } else {
     btnEdit.textContent = 'Editar Dados';
     btnSave.style.display = 'none';
@@ -1732,15 +1774,15 @@ function toggleEditProfile() {
     document.getElementById('prof-nivel').value = capitalize(currentUser.nivel_acesso || 'operador');
     document.getElementById('prof-nome').value = currentUser.nome || '';
     document.getElementById('prof-email').value = currentUser.email || '';
-    document.getElementById('prof-cargo').value = currentUser.cargo_funcao || '';
-    autoResizeCargo(); // ◄ Reajusta a altura caso o usuário tenha apagado/digitado algo e cancelado
     document.getElementById('prof-telefone').value = currentUser.telefone || '';
+    atualizarCargoUI(currentUser.cargo_funcao || '');
     hideError('profile-error');
   }
 }
 
 async function saveProfileChanges() {
   hideError('profile-error');
+  const role = currentUser?.nivel_acesso || 'operador';
   const nome = document.getElementById('prof-nome').value.trim();
   const email = document.getElementById('prof-email').value.trim();
   const cargo_funcao = document.getElementById('prof-cargo').value.trim();
@@ -1751,6 +1793,11 @@ async function saveProfileChanges() {
     return;
   }
 
+  if (telefone && !validarTelefone(telefone)) {
+    showError('profile-error', 'Telefone inválido. Informe DDD + número (10 ou 11 dígitos).');
+    return;
+  }
+
   setLoading('btn-save-profile', true, 'Aguarde...');
   try {
     const idUsuario = currentUser.id || currentUser.usuario_id;
@@ -1758,11 +1805,15 @@ async function saveProfileChanges() {
       id: idUsuario,
       nome,
       email,
-      cargo_funcao,
-      telefone,
-      nivel_acesso: currentUser.nivel_acesso,
-      empresa_id: currentUser.empresa_id || 0
+      telefone
     };
+
+    // Apenas Gerentes e Admins podem enviar atualização de cargo e metadados de vínculo
+    if (role !== 'operador') {
+      body.cargo_funcao = cargo_funcao;
+      body.nivel_acesso = currentUser.nivel_acesso;
+      body.empresa_id = currentUser.empresa_id || 0;
+    }
 
     const r = await apiFetch('/usuarios', {
       method: 'PUT',
@@ -1775,11 +1826,12 @@ async function saveProfileChanges() {
       // 1. Atualiza os dados do objeto em memória
       currentUser.nome = nome;
       currentUser.email = email;
-      currentUser.cargo_funcao = cargo_funcao;
-      autoResizeCargo(); // ◄ Ajusta a altura após salvar;
       currentUser.telefone = telefone;
+      if (role !== 'operador') {
+        currentUser.cargo_funcao = cargo_funcao;
+      }
 
-      // 2. Atualiza elementos visuais sem mudar de tela
+      // 2. Atualiza elementos visuais do Perfil e da Sidebar
       const iniciais = nome.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
       document.getElementById('sidebar-avatar').textContent = iniciais;
       document.getElementById('sidebar-name').textContent = nome;
@@ -1788,9 +1840,13 @@ async function saveProfileChanges() {
       document.getElementById('prof-avatar').textContent = iniciais;
       document.getElementById('prof-display-nome').textContent = nome;
       document.getElementById('prof-display-email').textContent = email;
+      atualizarCargoUI(currentUser.cargo_funcao || '');
 
-      // 3. Fecha o modo de edição e exibe o alerta verde na própria tela
+      // 3. Fecha o modo de edição e sincroniza a tabela de Equipe (caso seja Gerente)
       toggleEditProfile();
+      if (role === 'gerente') {
+        await loadEquipeGerente();
+      }
       showSuccess('profile-success', 'Perfil atualizado com sucesso!');
     } else {
       showError('profile-error', resData.message || 'Erro ao salvar alterações.');
@@ -2343,9 +2399,14 @@ function navTo(page, btn) {
 
   if (page === 'chat') carregarListaConversas();
   if (page === 'admin-usuarios') loadUsuariosAdmin();
+  if (page === 'gerente-equipe') loadEquipeGerente();
 
   if (page === 'profile') {
     resetProfileAlerts();
+    if (!isEditingProfile) {
+      atualizarCargoUI(currentUser?.cargo_funcao || '');
+    }
+    requestAnimationFrame(() => autoResizeCargo());
   }
 }
 
@@ -2745,6 +2806,11 @@ function mascaraTelefone(input) {
   input.value = v;
 }
 
+function validarTelefone(valor) {
+  const digitos = String(valor || '').replace(/\D/g, '');
+  return digitos.length === 0 || digitos.length === 10 || digitos.length === 11;
+}
+
 function mascaraCnpj(input) {
   let v = input.value.replace(/\D/g, '');
   if (v.length > 14) v = v.slice(0, 14);
@@ -2761,6 +2827,31 @@ function autoResizeCargo(el) {
   target.style.height = 'auto';
   target.style.height = Math.max(40, target.scrollHeight) + 'px';
 }
+
+function atualizarCargoUI(cargo) {
+  const textoCargo = (cargo || '').trim();
+
+  const profCargo = document.getElementById('prof-cargo');
+  if (profCargo) {
+    profCargo.value = textoCargo;
+    autoResizeCargo(profCargo);
+  }
+
+  const sidebarCargo = document.getElementById('sidebar-cargo');
+  if (sidebarCargo) {
+    if (textoCargo) {
+      sidebarCargo.textContent = textoCargo;
+      sidebarCargo.title = textoCargo;
+      sidebarCargo.style.display = '-webkit-box';
+    } else {
+      sidebarCargo.textContent = '';
+      sidebarCargo.title = '';
+      sidebarCargo.style.display = 'none';
+    }
+  }
+}
+
+window.addEventListener('resize', () => autoResizeCargo());
 </script>
 </body>
 </html>

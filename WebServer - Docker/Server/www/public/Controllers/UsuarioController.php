@@ -75,10 +75,9 @@ $data = $this->body();
                 $this->error('E-mail já cadastrado', 409);
             }
 
-            // Higieniza o telefone (opcional)
+            // Higieniza e valida o telefone (opcional; se informado, exige 10 ou 11 dígitos)
             if (array_key_exists('telefone', $data)) {
-                $tel = trim((string) $data['telefone']);
-                $data['telefone'] = $tel !== '' ? $tel : null;
+                $data['telefone'] = $this->normalizarTelefone($data['telefone']);
             }
 
             // Higieniza o cargo/função inicial (opcional)
@@ -178,20 +177,52 @@ $data = $this->body();
             $this->error('ID do usuario nao fornecido', 422);
         }
 
-        // Valida se um gerente está tentando editar outro usuário fora da sua empresa
-        $payload = $this->getAuthPayload(false);
-        if ($payload !== null && ($payload->nivel_acesso ?? '') === 'gerente' && $userId !== (int) $payload->sub) {
-            $gerente = $this->model->find((int) $payload->sub);
-            $alvo    = $this->model->find($userId);
+        // Busca os dados atuais do usuário alvo antes de aplicar regras de governança
+        $usuarioAtual = $this->model->find($userId);
+        if (!$usuarioAtual) {
+            $this->error('Usuario nao encontrado', 404);
+        }
 
-            if (!$alvo) {
-                $this->error('Usuario nao encontrado', 404);
+        // Valida regras de governança e hierarquia conforme o perfil autenticado no JWT
+        $payload = $this->getAuthPayload(false);
+        if ($payload !== null) {
+            $requesterRole = $payload->nivel_acesso ?? '';
+            $requesterId   = (int) $payload->sub;
+
+            // Operadores só podem editar o próprio perfil e não podem alterar Cargo / Função
+            if ($requesterRole === 'operador') {
+                if ($userId !== $requesterId) {
+                    $this->error('Operadores só têm permissão para editar o próprio perfil.', 403);
+                }
+
+                if (array_key_exists('cargo_funcao', $data)) {
+                    $novoCargo  = trim((string) ($data['cargo_funcao'] ?? ''));
+                    $cargoAtual = trim((string) ($usuarioAtual['cargo_funcao'] ?? ''));
+
+                    // Bloqueia tentativa de alteração do cargo oficial; se veio inalterado, apenas ignora o campo
+                    if ($novoCargo !== $cargoAtual) {
+                        $this->error('Operadores não têm permissão para alterar o próprio Cargo / Função.', 403);
+                    }
+                    unset($data['cargo_funcao']);
+                }
+
+                if (isset($data['nivel_acesso']) && $data['nivel_acesso'] !== $usuarioAtual['nivel_acesso']) {
+                    $this->error('Operadores não têm permissão para alterar o nível de acesso.', 403);
+                }
+
+                unset($data['nivel_acesso'], $data['empresa_id']);
             }
-            if (!$gerente || (int) $alvo['empresa_id'] !== (int) $gerente['empresa_id'] || $alvo['nivel_acesso'] === 'admin') {
-                $this->error('Você só tem permissão para editar colaboradores da sua própria empresa.', 403);
-            }
-            if (isset($data['nivel_acesso']) && $data['nivel_acesso'] === 'admin') {
-                $this->error('Gerentes não podem atribuir nível de acesso admin.', 403);
+
+            // Valida se um gerente está tentando editar outro usuário fora da sua empresa
+            if ($requesterRole === 'gerente' && $userId !== $requesterId) {
+                $gerente = $this->model->find($requesterId);
+
+                if (!$gerente || (int) $usuarioAtual['empresa_id'] !== (int) $gerente['empresa_id'] || $usuarioAtual['nivel_acesso'] === 'admin') {
+                    $this->error('Você só tem permissão para editar colaboradores da sua própria empresa.', 403);
+                }
+                if (isset($data['nivel_acesso']) && $data['nivel_acesso'] === 'admin') {
+                    $this->error('Gerentes não podem atribuir nível de acesso admin.', 403);
+                }
             }
         }
 
@@ -207,7 +238,7 @@ $data = $this->body();
 
         // Tratamento e higienização dos novos campos de dados pessoais
         if (array_key_exists('telefone', $data)) {
-            $data['telefone'] = !empty($data['telefone']) ? trim((string)$data['telefone']) : null;
+            $data['telefone'] = $this->normalizarTelefone($data['telefone']);
         }
 
         if (array_key_exists('cargo_funcao', $data)) {
@@ -280,6 +311,29 @@ $data = $this->body();
         }
 
         return $payload;
+    }
+
+    /**
+     * Valida e formata telefone brasileiro (10 ou 11 dígitos com DDD) quando informado.
+     */
+    private function normalizarTelefone(mixed $valor): ?string {
+        $tel = trim((string) ($valor ?? ''));
+        if ($tel === '') {
+            return null;
+        }
+
+        $digitos = preg_replace('/\D/', '', $tel);
+        $len = strlen($digitos);
+
+        if ($len !== 10 && $len !== 11) {
+            $this->error('Telefone inválido. Informe DDD + número com 10 ou 11 dígitos.', 422);
+        }
+
+        if ($len === 11) {
+            return sprintf('(%s) %s-%s', substr($digitos, 0, 2), substr($digitos, 2, 5), substr($digitos, 7, 4));
+        }
+
+        return sprintf('(%s) %s-%s', substr($digitos, 0, 2), substr($digitos, 2, 4), substr($digitos, 6, 4));
     }
  
     public function destroy(int $id = 0): void {
